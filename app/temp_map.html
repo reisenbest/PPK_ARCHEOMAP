@@ -1,0 +1,35 @@
+
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Offline Map</title>
+            <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+            <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+            <style>
+                #map {
+                    width: 100%;
+                    height: 100%;
+                }
+            </style>
+        </head>
+        <body>
+            <div id="map"></div>
+            <script>
+                var map = L.map('map', {
+                    center: [59.9502, 30.3216],  // Координаты Петропавловской крепости
+                    zoom: 14,  // Начальный зум
+                    zoomControl: true
+                });
+
+                // Указываем путь к локальным тайлам через file://
+                L.tileLayer('file:///E:/PPK_ARCHEOMAP/data/ppk_tiles/{z}/{x}/{y}.png', {
+                    maxZoom: 19,
+                    minZoom: 14,
+                    attribution: '&copy; OpenStreetMap contributors'
+                }).addTo(map);
+            </script>
+        </body>
+        </html>
+        
