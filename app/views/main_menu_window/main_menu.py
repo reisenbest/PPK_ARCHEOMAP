@@ -15,6 +15,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '.
 import config
 from views.map_window.map import MapController
 from views.information_window.information import InformationController
+from views.monumets_list_window.monuments_list import MonumentListController
 
 
 class MainMenuView(QMainWindow):
@@ -33,6 +34,7 @@ class MainMenuController:
         self.view.MenuExitButton.clicked.connect(self.exit_app)
         self.view.MenuInfoButton.clicked.connect(self.open_information_window)
         self.view.MenuMapButton.clicked.connect(self.open_map_window)
+        self.view.MenuMonumentsListButton.clicked.connect(self.open_monuments_list_window)
 
     def show(self):
         self.view.show()
@@ -47,4 +49,8 @@ class MainMenuController:
 
     def open_map_window(self):
         self.map_controller = MapController()
+        self.map_controller.show()
+
+    def open_monuments_list_window(self):
+        self.map_controller = MonumentListController()
         self.map_controller.show()

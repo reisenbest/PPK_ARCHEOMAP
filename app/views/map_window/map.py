@@ -21,7 +21,7 @@ class MapView(QWidget):
         self.web_view: QWebEngineView = self.findChild(QWebEngineView, "MapContainer")
 
         # Загружаем локальный HTML-файл с картой
-        html_path = os.path.join('E:\PPK_ARCHEOMAP\OSM', 'index.html')  # Путь к твоей карте
+        html_path = os.path.join(config.MAP_DIR, 'OSM/index.html')  # Путь к твоей карте
         if os.path.exists(html_path):
             local_url = QUrl.fromLocalFile(os.path.abspath(html_path))
             self.web_view.load(local_url)

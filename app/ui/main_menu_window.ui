@@ -27,7 +27,7 @@
      <string>MAP</string>
     </property>
    </widget>
-   <widget class="QPushButton" name="MenuDataBaseButton">
+   <widget class="QPushButton" name="MenuMonumentsListButton">
     <property name="geometry">
      <rect>
       <x>170</x>
@@ -37,7 +37,7 @@
      </rect>
     </property>
     <property name="text">
-     <string>DATABASE</string>
+     <string>Monuments List</string>
     </property>
    </widget>
    <widget class="QPushButton" name="MenuSettingsButton">
