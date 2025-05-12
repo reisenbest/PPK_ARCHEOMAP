@@ -1,12 +1,8 @@
-# подключает UI
-
-
-
 import os
 import sys
 from PyQt5.QtWidgets import QMainWindow, QApplication
 from PyQt5.uic import loadUi  # Импортируем функцию для загрузки .ui файла
-
+from PyQt5.QtCore import pyqtSlot, QObject
 
 # Добавляем корневую директорию в sys.path
 # Обеспечиваем корректный импорт при запуске из корня
@@ -19,14 +15,15 @@ from views.monumets_list_window.monuments_list import MonumentListController
 
 
 class MainMenuView(QMainWindow):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, parent=None):
+        super().__init__(parent)
         ui_path = os.path.join(config.UI_DIR, 'main_menu_window.ui')
         loadUi(ui_path, self)  # Загружаем интерфейс из .ui файла
 
 
-class MainMenuController:
-    def __init__(self):
+class MainMenuController(QObject):  # Наследуем от QObject для работы с сигналами и слотами
+    def __init__(self, parent=None):
+        super().__init__(parent)
         self.view = MainMenuView()
         self.setup_connections()
 
@@ -39,18 +36,21 @@ class MainMenuController:
     def show(self):
         self.view.show()
 
+    @pyqtSlot()  # Здесь все правильно: слот для выхода
     def exit_app(self):
         QApplication.quit()
 
+    @pyqtSlot()  # Слот для открытия окна информации
     def open_information_window(self):
         self.info_controller = InformationController()
         self.info_controller.show()
-    
 
+    @pyqtSlot()  # Слот для открытия карты
     def open_map_window(self):
         self.map_controller = MapController()
         self.map_controller.show()
 
+    @pyqtSlot()  # Слот для открытия списка памятников
     def open_monuments_list_window(self):
-        self.map_controller = MonumentListController()
-        self.map_controller.show()
+        self.monuments_list_controller = MonumentListController()
+        self.monuments_list_controller.show()

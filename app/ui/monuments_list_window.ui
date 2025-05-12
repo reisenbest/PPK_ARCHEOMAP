@@ -13,22 +13,14 @@
   <property name="windowTitle">
    <string>Form</string>
   </property>
-  <widget class="QLabel" name="databaseLabel">
+  <widget class="QListWidget" name="MonumentslistWidget">
    <property name="geometry">
     <rect>
-     <x>40</x>
-     <y>230</y>
-     <width>981</width>
-     <height>201</height>
+     <x>50</x>
+     <y>30</y>
+     <width>871</width>
+     <height>721</height>
     </rect>
-   </property>
-   <property name="font">
-    <font>
-     <pointsize>15</pointsize>
-    </font>
-   </property>
-   <property name="text">
-    <string>Здесь будет список памятников на и на каждый из них будет отдельная страница</string>
    </property>
   </widget>
  </widget>

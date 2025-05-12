@@ -16,7 +16,19 @@ VIEWS_DIR = os.path.join(BASE_APP_DIR, "views")
 
 
 
+
+
 for path in [UI_DIR, MAP_DIR, MEDIA_DIR, DATABASE_DIR, UTILS_DIR, VIEWS_DIR]:
     if not os.path.isdir(path):
         raise FileNotFoundError(f"⚠️  Warning: Directory not found — {path}")
+    
+
+db_params = {
+    'host': 'localhost',
+    'port': '****',
+    'user': 'username',
+    'dbname': 'dbname',
+    'password': 'password', #не хранить в открытом виде
+
+}
     

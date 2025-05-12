@@ -15,8 +15,8 @@ class InformationView(QWidget):
     Args:
         QWidget (класс PyQt): оболочка для элементов интерфейса (окно где все расположено будет)
     """
-    def __init__(self):
-        super().__init__()
+    def __init__(self, parent=None):
+        super().__init__(parent)
         ui_path = os.path.join(config.UI_DIR, 'information_window.ui')
         loadUi(ui_path, self) # Загружаем интерфейс из .ui файла
 
