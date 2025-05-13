@@ -4,6 +4,7 @@ import os
 import sys
 from PyQt5.QtWidgets import QWidget
 from PyQt5.uic import loadUi # Импортируем функцию для загрузки .ui файла
+from PyQt5.QtCore import pyqtSlot, QObject
 import config # здесь глобальные переменные хранятся
 from views.information_window.about_authors import AboutAuthorsView
 # Добавляем корневую директорию в sys.path
@@ -20,11 +21,12 @@ class InformationView(QWidget):
         ui_path = os.path.join(config.UI_DIR, 'information_window.ui')
         loadUi(ui_path, self) # Загружаем интерфейс из .ui файла
 
-class InformationController:
+class InformationController(QObject):
     """
     класс реализует всю логику которая происходит принажатии на пункт Information главного меню
     """
-    def __init__(self):
+    def __init__(self, parent=None):
+        super().__init__(parent)
         self.view = InformationView()
         self.setup_connections()
 
@@ -34,6 +36,7 @@ class InformationController:
     def show(self):
         self.view.show()
 
+    @pyqtSlot() 
     def show_about_authors(self):
         self.dialog = AboutAuthorsView()
         self.dialog.exec_()  # модальное окно

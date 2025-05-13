@@ -16,12 +16,52 @@
   <widget class="QListWidget" name="MonumentslistWidget">
    <property name="geometry">
     <rect>
-     <x>50</x>
-     <y>30</y>
-     <width>871</width>
-     <height>721</height>
+     <x>70</x>
+     <y>20</y>
+     <width>901</width>
+     <height>691</height>
     </rect>
    </property>
+  </widget>
+  <widget class="QWidget" name="horizontalLayoutWidget">
+   <property name="geometry">
+    <rect>
+     <x>80</x>
+     <y>720</y>
+     <width>891</width>
+     <height>80</height>
+    </rect>
+   </property>
+   <layout class="QHBoxLayout" name="horizontalLayout">
+    <item>
+     <widget class="QPushButton" name="readMonumentBtn">
+      <property name="text">
+       <string>read monument</string>
+      </property>
+     </widget>
+    </item>
+    <item>
+     <widget class="QPushButton" name="createMonumentBtn">
+      <property name="text">
+       <string>create monument</string>
+      </property>
+     </widget>
+    </item>
+    <item>
+     <widget class="QPushButton" name="updateMonumentBtn">
+      <property name="text">
+       <string>update monument</string>
+      </property>
+     </widget>
+    </item>
+    <item>
+     <widget class="QPushButton" name="deleteMonumentBtn">
+      <property name="text">
+       <string>delete monument</string>
+      </property>
+     </widget>
+    </item>
+   </layout>
   </widget>
  </widget>
  <resources/>

@@ -1,12 +1,12 @@
+import config
 import sys
 import os
-import config
+
 from PyQt5.QtSql import QSqlDatabase
 import sqlite3
 
 
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..'))) # при запуске приложения через main.py Ошибку при отсутствии этой строчки не выкидывает
-
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 # class DataBaseConnection(QSqlDatabase):
 #   """docstring for ClassName."""
 #   def __init__(self, parent=None):
@@ -14,15 +14,13 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '.
 #     self.db_coonnection()
 
 #   def db_coonnection(self):
-    
+
 
 #     connection_status = db.open()
 #     if connection_status:
 #       print('succesful connection to database', file=sys.stderr)
 #     else:
 #       print('connection error', file=sys.stderr)
-    
-    
 
 
 class DBHelper:
@@ -37,7 +35,8 @@ class DBHelper:
         """Получаем список памятников из базы данных."""
         connection = self.connect()
         cursor = connection.cursor()
-        cursor.execute("SELECT monument_id, name FROM Monuments")  # Измените на свой запрос
+        # Измените на свой запрос
+        cursor.execute("SELECT monument_id, name FROM Monuments")
         monuments = cursor.fetchall()
         connection.close()
         return monuments
@@ -46,7 +45,17 @@ class DBHelper:
         """Получаем подробную информацию о памятнике по ID."""
         connection = self.connect()
         cursor = connection.cursor()
-        cursor.execute("SELECT * FROM Monuments WHERE id=?", (monument_id,))
+        cursor.execute(
+            "SELECT * FROM Monuments WHERE monument_id=?", (monument_id,))
         details = cursor.fetchone()
         connection.close()
         return details
+
+# TODO  НАПИСАТЬ В БД КЛАССЕ МЕТОДЫ КРУД И СЕРИАЛИЗАТОРЫ А В КЛАССАХ ИХ ИМПОРТИРОВАТЬ И ВЫЗЫВАТЬ!
+
+
+print('asds')
+db_path = os.path.join(config.DATABASE_DIR, 'database.db')
+x = DBHelper(db_path)
+details = x.get_monument_details(1)
+print(details)  # ← без этого ничего не будет видно
