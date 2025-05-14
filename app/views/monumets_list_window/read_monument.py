@@ -17,21 +17,21 @@ class ReadMonumentView(QDialog):
         loadUi(ui_path, self)
 
     def display_monument_details(self, details):
+        print('Детали памятника:', details)
 
-      name, description, date, location = details
-      content = f"""
-        <h1>{name}</h1>
-        <h2>Описание</h2>
-        <p>{description}</p>
-        <h2>Дата</h2>
-        <p>{date}</p>
-        <h2>Местоположение</h2>
-        <p>{location}</p>
-    """
-      self.MonumentContainer.setHtml(content)
+        content = f"""
+            <h2>{details['monument_id']}</h2>
+            <h2>Описание</h2>
+            <p>{details['name']}</o>
+            <h2>Описание</h2>
+            <p>{details['description']}</p>
+            <h2>Объект</h2>
+            <p>{details['research_object']}</p>
+        """
+        self.MonumentContainer.setHtml(content)
 
 class ReadMonumentController(QObject):
-    def __init__(self, monument_details, parent=None):
+    def __init__(self,  monument_details, parent=None):
         super().__init__(parent)
         self.view = ReadMonumentView()
         self.view.display_monument_details(monument_details)  # Заполняем окно данными

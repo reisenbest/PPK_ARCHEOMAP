@@ -25,9 +25,10 @@ class InformationController(QObject):
     """
     класс реализует всю логику которая происходит принажатии на пункт Information главного меню
     """
-    def __init__(self, parent=None):
+    def __init__(self, db_manager, parent=None):
         super().__init__(parent)
         self.view = InformationView()
+        self.db_manager = db_manager
         self.setup_connections()
 
     def setup_connections(self):

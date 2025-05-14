@@ -16,7 +16,7 @@
   <widget class="QListWidget" name="MonumentslistWidget">
    <property name="geometry">
     <rect>
-     <x>70</x>
+     <x>120</x>
      <y>20</y>
      <width>901</width>
      <height>691</height>
@@ -62,6 +62,19 @@
      </widget>
     </item>
    </layout>
+  </widget>
+  <widget class="QPushButton" name="refreshBtn">
+   <property name="geometry">
+    <rect>
+     <x>20</x>
+     <y>270</y>
+     <width>75</width>
+     <height>131</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Обновить</string>
+   </property>
   </widget>
  </widget>
  <resources/>

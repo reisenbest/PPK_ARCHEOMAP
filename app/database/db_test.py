@@ -4,7 +4,7 @@ import sys
 # Добавляем путь к папке `app`, где лежит config.py
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from database.db_main_connection import DBHelper
+from database.db_main_connection import DataBaseManager
 import config
 
 
@@ -12,7 +12,7 @@ def main():
     db_path = os.path.join(config.DATABASE_DIR, 'database.db')
     print(f"Используем базу данных по пути: {db_path}")
 
-    db_helper = DBHelper(db_path)
+    db_helper = DataBaseManager(db_path)
 
     print("📌 Список памятников:")
     try:
@@ -26,7 +26,7 @@ def main():
     if monuments:
         try:
             first_id = monuments[0][0]
-            details = db_helper.get_monument_details(first_id)
+            details = db_helper.get_monument_by_id(first_id)
             print(details)
         except Exception as e:
             print("Ошибка при получении деталей памятника:", e)

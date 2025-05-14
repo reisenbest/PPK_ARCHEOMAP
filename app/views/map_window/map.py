@@ -5,7 +5,8 @@ from PyQt5.QtWidgets import QWidget
 from PyQt5.uic import loadUi # Импортируем функцию для загрузки .ui файла
 import config # здесь глобальные переменные хранятся
 from PyQt5.QtWebEngineWidgets import QWebEngineView
-from PyQt5.QtCore import QUrl
+from PyQt5.QtCore import QUrl, pyqtSlot, QObject
+
 # Добавляем корневую директорию в sys.path
 # Обеспечиваем корректный импорт при запуске из корня
 
@@ -28,12 +29,14 @@ class MapView(QWidget):
         else:
             print(f"[ОШИБКА] HTML-файл карты не найден: {html_path}")
 
-class MapController:
+class MapController(QObject):
     """
     класс реализует всю логику которая происходит принажатии на пункт Information главного меню
     """
-    def __init__(self):
+    def __init__(self, db_manager, parent):
+        super().__init__(parent)
         self.view = MapView()
+        self.db_manager = db_manager
         self.setup_connections()
 
     def show(self):
