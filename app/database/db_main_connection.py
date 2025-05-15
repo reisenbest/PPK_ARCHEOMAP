@@ -24,6 +24,11 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 #       print('connection error', file=sys.stderr)
 
 
+import os
+import config
+from PyQt5.QtSql import QSqlDatabase, QSqlQuery
+
+
 class DataBaseManager:
     '''
     Класс для работы с БД SQLite через QtSql.
@@ -34,11 +39,12 @@ class DataBaseManager:
         self.db = QSqlDatabase.addDatabase("QSQLITE")
         self.db_path = os.path.join(config.DATABASE_DIR, 'database.db')
         self.db.setDatabaseName(self.db_path)
-        self.db.open()
-        if self.db.isOpenError():
+
+        if not self.db.open():
             raise Exception(f"Не удалось открыть базу данных: {self.db.lastError().text()}")
 
-        QSqlQuery("PRAGMA foreign_keys = ON")  # включаем поддержку внешних ключей
+        # Включаем поддержку внешних ключей — важно передать self.db
+        QSqlQuery("PRAGMA foreign_keys = ON", self.db)
 
     def close(self):
         """Закрыть соединение с базой данных."""
@@ -46,7 +52,7 @@ class DataBaseManager:
 
     def get_monuments(self):
         """Получить список памятников (ID и имя)."""
-        query = QSqlQuery("SELECT monument_id, name FROM Monuments")
+        query = QSqlQuery("SELECT monument_id, name FROM Monuments", self.db)
         monuments = []
         while query.next():
             monuments.append({
@@ -57,7 +63,7 @@ class DataBaseManager:
 
     def get_monument_by_id(self, monument_id: int):
         """Получить один памятник по ID."""
-        query = QSqlQuery()
+        query = QSqlQuery(self.db)
         query.prepare("SELECT * FROM Monuments WHERE monument_id = ?")
         query.addBindValue(monument_id)
         if query.exec() and query.next():
@@ -69,7 +75,7 @@ class DataBaseManager:
 
     def create_monument(self, name: str, type_id: int):
         """Создать новый памятник."""
-        query = QSqlQuery()
+        query = QSqlQuery(self.db)
         query.prepare("""
             INSERT INTO Monuments (name, type_id)
             VALUES (?, ?)
@@ -79,24 +85,25 @@ class DataBaseManager:
         if not query.exec():
             raise Exception(f"Ошибка при добавлении памятника: {query.lastError().text()}")
 
-    def update_monument_by_id(self, monument_id: int, fields: dict):
+    def update_monument_by_id(self, monument_id: int, monument: dict):
         """
         Обновить поля памятника по ID.
-        Пример: fields = {"name": "Новое имя", "type_id": 2}
+        Универсальный вариант — список полей задаётся динамически через словарь monument.
         """
-        if not fields:
-            return  # ничего не обновлять
+        if not monument:
+            return  # Нечего обновлять
 
-        # Формируем SQL-запрос динамически
-        set_clause = ", ".join(f"{key} = ?" for key in fields.keys())
-        values = list(fields.values())
+        set_parts = [f"{key} = ?" for key in monument.keys()]
+        set_clause = ", ".join(set_parts)
+        values = list(monument.values())
 
-        query = QSqlQuery()
+        query = QSqlQuery(self.db)
         query.prepare(f"""
             UPDATE Monuments
             SET {set_clause}
             WHERE monument_id = ?
         """)
+
         for value in values:
             query.addBindValue(value)
         query.addBindValue(monument_id)
@@ -106,7 +113,7 @@ class DataBaseManager:
 
     def delete_monument_by_id(self, monument_id: int):
         """Удалить памятник по ID."""
-        query = QSqlQuery()
+        query = QSqlQuery(self.db)
         query.prepare("DELETE FROM Monuments WHERE monument_id = ?")
         query.addBindValue(monument_id)
         if not query.exec():

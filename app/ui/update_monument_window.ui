@@ -92,6 +92,32 @@
     <string>RESEARCH_OBJECT</string>
    </property>
   </widget>
+  <widget class="QPushButton" name="acceptUpdBtn">
+   <property name="geometry">
+    <rect>
+     <x>84</x>
+     <y>692</y>
+     <width>151</width>
+     <height>61</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Применнить изменения</string>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="cancelBtn">
+   <property name="geometry">
+    <rect>
+     <x>260</x>
+     <y>692</y>
+     <width>121</width>
+     <height>61</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Отмена</string>
+   </property>
+  </widget>
  </widget>
  <resources/>
  <connections/>

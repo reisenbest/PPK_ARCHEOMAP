@@ -6,7 +6,7 @@ from PyQt5.uic import loadUi
 import config
 from views.monumets_list_window.read_monument import ReadMonumentController
 from views.monumets_list_window.delete_monument import DeleteMonumentController
-
+from views.monumets_list_window.update_monument import UpdateMonumentController
 
 
 class MonumentListView(QWidget):
@@ -72,7 +72,7 @@ class MonumentListController(QObject):
     def show_read_monument(self):
         if self.current_monument_id:
             monument = self.db_manager.get_monument_by_id(self.current_monument_id)
-            self.read_monument = ReadMonumentController(monument)
+            self.read_monument = ReadMonumentController(monument_data=monument)
             self.read_monument.show()
 
     @pyqtSlot()
@@ -83,7 +83,7 @@ class MonumentListController(QObject):
     def update_monument(self):
        if self.current_monument_id:
             monument = self.db_manager.get_monument_by_id(self.current_monument_id)
-            self.update_monument = UpdateMonumentController(monument)
+            self.update_monument = UpdateMonumentController(monument_details=monument, db_manager=self.db_manager)
             self.update_monument.show()
 
     @pyqtSlot()

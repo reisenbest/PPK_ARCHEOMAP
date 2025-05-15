@@ -16,25 +16,25 @@ class ReadMonumentView(QDialog):
         ui_path = os.path.join(config.UI_DIR, 'read_monument_window.ui')
         loadUi(ui_path, self)
 
-    def display_monument_details(self, details):
-        print('Детали памятника:', details)
+    def display_monument_data(self, data):
+        print('Детали памятника:', data)
 
         content = f"""
-            <h2>{details['monument_id']}</h2>
+            <h2>{data['monument_id']}</h2>
             <h2>Описание</h2>
-            <p>{details['name']}</o>
+            <p>{data['name']}</o>
             <h2>Описание</h2>
-            <p>{details['description']}</p>
+            <p>{data['description']}</p>
             <h2>Объект</h2>
-            <p>{details['research_object']}</p>
+            <p>{data['research_object']}</p>
         """
         self.MonumentContainer.setHtml(content)
 
 class ReadMonumentController(QObject):
-    def __init__(self,  monument_details, parent=None):
+    def __init__(self,  monument_data, parent=None):
         super().__init__(parent)
         self.view = ReadMonumentView()
-        self.view.display_monument_details(monument_details)  # Заполняем окно данными
+        self.view.display_monument_data(monument_data)  # Заполняем окно данными
         self.setup_connections()
 
     def show(self):
