@@ -73,7 +73,7 @@ class DataBaseManager:
             return record
         return None
 
-    def create_monument(self, name: str, type_id: int):
+    def create_monument(self, data: dict):
         """Создать новый памятник."""
         query = QSqlQuery(self.db)
         query.prepare("""
@@ -118,7 +118,17 @@ class DataBaseManager:
         query.addBindValue(monument_id)
         if not query.exec():
             raise Exception(f"Ошибка при удалении памятника: {query.lastError().text()}")
+        
+    def get_info_about_table(self, table_name: str):
+        query = QSqlQuery(self.db)
+        query.prepare(f"SELECT * FROM {table_name}, LIMIT 1")
+        query.addBindValue(table_name)
+        if not query.exec():
+            raise Exception(f"Ошибка при запросе: {query.lastError().text()}")
 
+        record = query.record()
+        data = {}
+        #добавить 3 ключа - количество колонок, их названия и тип? или обхеденить? из этого потом в create monument данные брать после его вызова
 # TODO  НАПИСАТЬ В БД КЛАССЕ МЕТОДЫ КРУД И СЕРИАЛИЗАТОРЫ А В КЛАССАХ ИХ ИМПОРТИРОВАТЬ И ВЫЗЫВАТЬ!
 
 print('asds')

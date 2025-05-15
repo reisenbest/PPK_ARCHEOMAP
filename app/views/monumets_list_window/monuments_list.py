@@ -7,6 +7,7 @@ import config
 from views.monumets_list_window.read_monument import ReadMonumentController
 from views.monumets_list_window.delete_monument import DeleteMonumentController
 from views.monumets_list_window.update_monument import UpdateMonumentController
+from views.monumets_list_window.create_monument import CreateMonumentController
 
 
 class MonumentListView(QWidget):
@@ -77,7 +78,8 @@ class MonumentListController(QObject):
 
     @pyqtSlot()
     def create_monument(self):
-        print("Создание памятника (заглушка)")
+        self.create_monument = CreateMonumentController(db_manager=self.db_manager)
+        self.create_monument.show()
 
     @pyqtSlot()
     def update_monument(self):
