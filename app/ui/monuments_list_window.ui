@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>Form</class>
- <widget class="QWidget" name="Form">
+ <class>MonumentListForm</class>
+ <widget class="QWidget" name="MonumentListForm">
   <property name="geometry">
    <rect>
     <x>0</x>
@@ -11,23 +11,48 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Form</string>
+   <string>Список памятников</string>
   </property>
-  <widget class="QListWidget" name="MonumentslistWidget">
+
+  <widget class="QTableView" name="monumentsTableView">
    <property name="geometry">
     <rect>
      <x>120</x>
      <y>20</y>
-     <width>901</width>
-     <height>691</height>
+     <width>891</width>
+     <height>671</height>
     </rect>
    </property>
+   <property name="editTriggers">
+    <set>QAbstractItemView::NoEditTriggers</set>
+   </property>
+   <property name="selectionBehavior">
+    <enum>QAbstractItemView::SelectRows</enum>
+   </property>
+   <property name="selectionMode">
+    <enum>QAbstractItemView::SingleSelection</enum>
+   </property>
   </widget>
+
+  <widget class="QPushButton" name="refreshBtn">
+   <property name="geometry">
+    <rect>
+     <x>20</x>
+     <y>20</y>
+     <width>80</width>
+     <height>80</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Обновить</string>
+   </property>
+  </widget>
+
   <widget class="QWidget" name="horizontalLayoutWidget">
    <property name="geometry">
     <rect>
-     <x>80</x>
-     <y>720</y>
+     <x>120</x>
+     <y>700</y>
      <width>891</width>
      <height>80</height>
     </rect>
@@ -36,46 +61,34 @@
     <item>
      <widget class="QPushButton" name="readMonumentBtn">
       <property name="text">
-       <string>read monument</string>
+       <string>Просмотр</string>
       </property>
      </widget>
     </item>
     <item>
      <widget class="QPushButton" name="createMonumentBtn">
       <property name="text">
-       <string>create monument</string>
+       <string>Создать</string>
       </property>
      </widget>
     </item>
     <item>
      <widget class="QPushButton" name="updateMonumentBtn">
       <property name="text">
-       <string>update monument</string>
+       <string>Изменить</string>
       </property>
      </widget>
     </item>
     <item>
      <widget class="QPushButton" name="deleteMonumentBtn">
       <property name="text">
-       <string>delete monument</string>
+       <string>Удалить</string>
       </property>
      </widget>
     </item>
    </layout>
   </widget>
-  <widget class="QPushButton" name="refreshBtn">
-   <property name="geometry">
-    <rect>
-     <x>20</x>
-     <y>270</y>
-     <width>75</width>
-     <height>131</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string>Обновить</string>
-   </property>
-  </widget>
+
  </widget>
  <resources/>
  <connections/>

@@ -33,7 +33,7 @@ class MapController(QObject):
     """
     класс реализует всю логику которая происходит принажатии на пункт Information главного меню
     """
-    def __init__(self, db_manager, parent):
+    def __init__(self, db_manager, parent=None):
         super().__init__(parent)
         self.view = MapView()
         self.db_manager = db_manager

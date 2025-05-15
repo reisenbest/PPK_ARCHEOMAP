@@ -1,0 +1,35 @@
+
+import os
+import sys
+import config
+from PyQt5.QtWidgets import QDialog
+from PyQt5.QtCore import pyqtSlot, QObject
+from PyQt5.uic import loadUi
+
+
+
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..')))
+
+class UpdateMonumentView(QDialog):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        ui_path = os.path.join(config.UI_DIR, 'update_monument_window.ui')
+        loadUi(ui_path, self)
+
+
+        self.nameEdit.setText('test')
+
+
+
+class UpdateMonumentController(QObject):
+    def __init__(self,  monument_details, parent=None):
+        super().__init__(parent)
+        self.view = UpdateMonumentView()
+        # self.view.display_monument_details(monument_details)  # Заполняем окно данными
+        self.setup_connections()
+
+    def show(self):
+        self.view.show()
+
+    def setup_connections(self):
+        pass

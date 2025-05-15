@@ -6,16 +6,16 @@ from database.db_main_connection import DataBaseManager
 def main():
     app = QApplication(sys.argv)
 
-    # Создаём менеджер базы данных
+    # Инициализируем менеджер БД на основе QSql
     db_manager = DataBaseManager()
 
-    # Создаём контроллер главного меню и передаём ему менеджер базы данных
+    # Передаём менеджер контроллеру
     controller = MainMenuController(db_manager=db_manager)
     controller.show()
 
     exit_code = app.exec_()
 
-    # Закрываем соединение с базой данных при выходе
+    # Закрываем соединение при завершении
     db_manager.close()
     sys.exit(exit_code)
 

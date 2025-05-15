@@ -1,107 +1,100 @@
 import os
-import sys
-from PyQt5.QtWidgets import QWidget, QListWidgetItem, QListWidget
+from PyQt5.QtWidgets import QWidget
+from PyQt5.QtSql import QSqlTableModel
+from PyQt5.QtCore import QObject, pyqtSlot, Qt
 from PyQt5.uic import loadUi
-from PyQt5.QtCore import pyqtSlot, QObject
 import config
-from database.db_main_connection import DataBaseManager  # Импортируем наш помощник для работы с БД
 from views.monumets_list_window.read_monument import ReadMonumentController
 from views.monumets_list_window.delete_monument import DeleteMonumentController
 
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..')))  # Путь до проекта
 
 
 class MonumentListView(QWidget):
-    """Отображение списка памятников."""
     def __init__(self, parent=None):
         super().__init__(parent)
-        ui_path = os.path.join(config.UI_DIR, 'monuments_list_window.ui')
-        loadUi(ui_path, self)  # Загружаем интерфейс из .ui файла
+        ui_path = os.path.join(config.UI_DIR, "monuments_list_window.ui")
+        loadUi(ui_path, self)
 
-        # Инициализируем список памятников
-        self.monument_list_widget = self.findChild(QListWidget, "MonumentslistWidget")  # Предполагаем, что это QListWidget в .ui файле
+        # Настройка модели таблицы
+        self.model = QSqlTableModel(self)
+        self.model.setTable("Monuments")
+        self.model.select()
+        self.model.setHeaderData(0, Qt.Horizontal, "ID")
+        self.model.setHeaderData(1, Qt.Horizontal, "Название")
 
-    def display_monuments(self, monuments):
-        """Отображение памятников в списке."""
-        self.monument_list_widget.clear()  # Очищаем список перед добавлением новых данных
-        for monument in monuments:
-            item = QListWidgetItem(monument['name'])  # Название памятника
-            item.setData(1, monument['monument_id'])  # ID памятника
-            self.monument_list_widget.addItem(item)
+        self.monumentsTableView.setModel(self.model)
+        self.monumentsTableView.resizeColumnsToContents()
+        self.monumentsTableView.setSortingEnabled(True)
 
 
 class MonumentListController(QObject):
-    """Логика работы с памятниками."""
-
-    def __init__(self, db_manager,  parent=None):
+    def __init__(self, db_manager, parent=None):
         super().__init__(parent)
-        self.view = MonumentListView()
         self.db_manager = db_manager
+        self.view = MonumentListView()
+        self.current_monument_id = None
+
         self.setup_connections()
-        self.current_monument_details = None  # Будет хранить данные выбранного памятника
+        self.update_buttons_state(False)
 
     def show(self):
         self.view.show()
 
     def setup_connections(self):
-        """Подключаем события."""
-        self.view.readMonumentBtn.setEnabled(False)
-        self.view.createMonumentBtn.setEnabled(False)
-        self.view.updateMonumentBtn.setEnabled(False)
-        self.view.deleteMonumentBtn.setEnabled(False)
-        
-        self.view.monument_list_widget.itemSelectionChanged.connect(self.update_buttons_state)
-        self.view.monument_list_widget.itemClicked.connect(self.on_monument_click)
-        
-        # TODO Сделать отдлеьным методом в классе обработчика бд и повесить его на кнопки
-        # Загружаем список памятников из базы данных ()
-        monuments = self.db_manager.get_monuments()
-        self.view.display_monuments(monuments)
+        selection_model = self.view.monumentsTableView.selectionModel()
+        selection_model.selectionChanged.connect(self.on_selection_changed)
 
         self.view.readMonumentBtn.clicked.connect(self.show_read_monument)
+        self.view.createMonumentBtn.clicked.connect(self.create_monument)
+        self.view.updateMonumentBtn.clicked.connect(self.update_monument)
         self.view.deleteMonumentBtn.clicked.connect(self.delete_monument)
         self.view.refreshBtn.clicked.connect(self.refresh_data)
 
+    def get_selected_monument_id(self):
+        indexes = self.view.monumentsTableView.selectionModel().selectedRows()
+        if indexes:
+            row = indexes[0].row()
+            return self.view.model.data(self.view.model.index(row, 0))
+        return None
+
+    @pyqtSlot()
+    def on_selection_changed(self):
+        self.current_monument_id = self.get_selected_monument_id()
+        self.update_buttons_state(bool(self.current_monument_id))
+
+    def update_buttons_state(self, enabled: bool):
+        self.view.readMonumentBtn.setEnabled(enabled)
+        self.view.updateMonumentBtn.setEnabled(enabled)
+        self.view.deleteMonumentBtn.setEnabled(enabled)
+        self.view.createMonumentBtn.setEnabled(True)
+
     @pyqtSlot()
     def show_read_monument(self):
-        self.read_monument = ReadMonumentController(self.monument_details)
-        self.read_monument.show()
-    
+        if self.current_monument_id:
+            monument = self.db_manager.get_monument_by_id(self.current_monument_id)
+            self.read_monument = ReadMonumentController(monument)
+            self.read_monument.show()
+
+    @pyqtSlot()
+    def create_monument(self):
+        print("Создание памятника (заглушка)")
+
+    @pyqtSlot()
+    def update_monument(self):
+       if self.current_monument_id:
+            monument = self.db_manager.get_monument_by_id(self.current_monument_id)
+            self.update_monument = UpdateMonumentController(monument)
+            self.update_monument.show()
+
     @pyqtSlot()
     def delete_monument(self):
-        self.delete_monument = DeleteMonumentController(monument_details=self.monument_details,
-                                                        db_manager=self.db_manager)
-        self.delete_monument.show()
-    
+        if self.current_monument_id:
+            monument = self.db_manager.get_monument_by_id(self.current_monument_id)
+            self.delete_dialog = DeleteMonumentController(monument_details=monument, db_manager=self.db_manager)
+            self.delete_dialog.show()
+
     @pyqtSlot()
     def refresh_data(self):
-        """Обновляет список памятников."""
-        monuments = self.db_manager.get_monuments()  # Получаем свежие данные
-        self.view.display_monuments(monuments)       # Отображаем их
-        self.view.readMonumentBtn.setEnabled(False)  # Сбрасываем состояние кнопок
-        self.view.createMonumentBtn.setEnabled(False)
-        self.view.updateMonumentBtn.setEnabled(False)
-        self.view.deleteMonumentBtn.setEnabled(False)
-        self.monument_details = None
-    
-    @pyqtSlot(QListWidgetItem)
-    def on_monument_click(self, item):
-        """Обработка клика по элементу в списке."""
-        monument_id = item.data(1)  # Получаем ID памятника
-        self.monument_details = self.db_manager.get_monument_by_id(monument_id)
-
-        # Показываем информацию о памятнике
-        self.show_monument_details(self.monument_details)
-        
-    def update_buttons_state(self):
-        """Активирует кнопки, если есть выбранный элемент."""
-        is_selected = bool(self.view.monument_list_widget.selectedItems())
-        self.view.readMonumentBtn.setEnabled(is_selected)
-        self.view.createMonumentBtn.setEnabled(is_selected)
-        self.view.updateMonumentBtn.setEnabled(is_selected)
-        self.view.deleteMonumentBtn.setEnabled(is_selected)
-
-    def show_monument_details(self, details):
-        """Отображаем информацию о памятнике."""
-        # Реализуйте отображение данных в нужном окне или компоненте
-        print(details)
+        self.view.model.select()
+        self.update_buttons_state(False)
+        self.current_monument_id = None
