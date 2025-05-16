@@ -2,7 +2,7 @@
 import os
 import sys
 import config
-from PyQt5.QtWidgets import QDialog
+from PyQt5.QtWidgets import QDialog, QMessageBox
 from PyQt5.QtCore import pyqtSlot, QObject
 from PyQt5.uic import loadUi
 
@@ -24,8 +24,6 @@ class UpdateMonumentView(QDialog):
 
 
         
-
-
 
 class UpdateMonumentController(QObject):
     def __init__(self, monument_details, db_manager, parent=None):
@@ -59,14 +57,17 @@ class UpdateMonumentController(QObject):
         monument['description'] = self.view.descriptionEdit.toPlainText()
         monument['research_object'] = self.view.resObjEdit.text()
 
-        self.db_manager.update_monument_by_id(monument_id=monument['monument_id'],
+        try:
+            success = self.db_manager.update_monument_by_id(monument_id=monument['monument_id'],
                                               monument=monument)
+            if success:
+                self.view.accept()  # обновление успешно — закрыть окно и вернуть Accepted
+            else:
+                QMessageBox.warning(self.view, "Ошибка", "Не удалось обновить памятник.")
+
+        except Exception as e:
+             QMessageBox.critical(self.view, "Ошибка", f"Произошла ошибка при обновлении:\n{e}")
         
-        self.view.accept()  # Закрытие окна после успешного изменение
-        
-        # monument_id = self.monument_details['monument_id']
-        # self.db_manager.update_monument_by_id(monument_id)  # Удаляем памятник
-        # self.view.accept()  # Закрытие окна после успешного удаления
 
 
     

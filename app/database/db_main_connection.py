@@ -1,5 +1,5 @@
 
-import config
+
 import sys
 import os
 
@@ -8,6 +8,7 @@ from PyQt5.QtSql import QSqlError
 
 # TODO сделать одну точку входа базы данных при входе в приложение открывается коннект и им все пользуются
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+import config
 # class DataBaseConnection(QSqlDatabase):
 #   """docstring for ClassName."""
 #   def __init__(self, parent=None):
@@ -72,19 +73,22 @@ class DataBaseManager:
                 record[query.record().fieldName(i)] = query.value(i)
             return record
         return None
-
+    
     def create_monument(self, data: dict):
         """Создать новый памятник."""
         query = QSqlQuery(self.db)
         query.prepare("""
-            INSERT INTO Monuments (name, type_id)
-            VALUES (?, ?)
+            INSERT INTO Monuments (name, description, research_object)
+            VALUES (?, ?, ?)
         """)
-        query.addBindValue(name)
-        query.addBindValue(type_id)
+
+        query.addBindValue(data['name'])
+        query.addBindValue(data['description'])
+        query.addBindValue(data['research_object'])
         if not query.exec():
             raise Exception(f"Ошибка при добавлении памятника: {query.lastError().text()}")
 
+        return True #возвращается True если все успешно. Это тру потом используется при CRUD операциях, при обработке ошибок и обновлении окна со списоком памятников после CRUD операций
     def update_monument_by_id(self, monument_id: int, monument: dict):
         """
         Обновить поля памятника по ID.
@@ -111,6 +115,7 @@ class DataBaseManager:
         if not query.exec():
             raise Exception(f"Ошибка при обновлении памятника: {query.lastError().text()}")
 
+        return True #возвращается True если все успешно. Это тру потом используется при CRUD операциях, при обработке ошибок и обновлении окна со списоком памятников после CRUD операций
     def delete_monument_by_id(self, monument_id: int):
         """Удалить памятник по ID."""
         query = QSqlQuery(self.db)
@@ -119,21 +124,55 @@ class DataBaseManager:
         if not query.exec():
             raise Exception(f"Ошибка при удалении памятника: {query.lastError().text()}")
         
+        return True #возвращается True если все успешно. Это тру потом используется при CRUD операциях, при обработке ошибок и обновлении окна со списоком памятников после CRUD операций
     def get_info_about_table(self, table_name: str):
+        # Создаём объект запроса, используя подключение к базе
         query = QSqlQuery(self.db)
-        query.prepare(f"SELECT * FROM {table_name}, LIMIT 1")
-        query.addBindValue(table_name)
+
+        # Подготавливаем SQL-запрос на получение информации о структуре таблицы
+        # PRAGMA table_info(<table_name>) — это специальная команда SQLite,
+        # которая возвращает информацию о колонках указанной таблицы.
+        # Она не поддерживает параметризованные значения, поэтому имя таблицы вставляется напрямую.
+        query.prepare(f"PRAGMA table_info({table_name})")
+
+        # Выполняем запрос
         if not query.exec():
+            # Если произошла ошибка — выбрасываем исключение с сообщением
             raise Exception(f"Ошибка при запросе: {query.lastError().text()}")
 
-        record = query.record()
-        data = {}
-        #добавить 3 ключа - количество колонок, их названия и тип? или обхеденить? из этого потом в create monument данные брать после его вызова
+        # Здесь будет храниться информация обо всех колонках таблицы
+        table_data = []
+
+        # Обрабатываем строки результата запроса
+        while query.next():
+            # Для каждой строки (т.е. каждой колонки в таблице) возвращаются такие поля:
+            # 0: cid            — порядковый номер колонки
+            # 1: name           — имя колонки
+            # 2: type           — тип данных (например, TEXT, INTEGER)
+            # 3: notnull        — флаг: 1, если поле не может быть NULL
+            # 4: dflt_value     — значение по умолчанию (если задано)
+            # 5: pk             — флаг: 1, если это часть первичного ключа
+
+            column_info = {
+                "cid": query.value(0),                    # Порядковый номер столбца
+                "name": query.value(1),                   # Имя столбца
+                "type": query.value(2),                   # Тип данных (например, TEXT, INTEGER)
+                "notnull": bool(query.value(3)),          # True, если поле обязательно для заполнения
+                "default_value": query.value(4),          # Значение по умолчанию (или None)
+                "primary_key": bool(query.value(5))       # True, если это поле является частью первичного ключа
+            }
+
+            # Добавляем словарь с информацией о колонке в общий список
+            table_data.append(column_info)
+
+        # Возвращаем список словарей — по одному на каждую колонку таблицы
+        return table_data
+
 # TODO  НАПИСАТЬ В БД КЛАССЕ МЕТОДЫ КРУД И СЕРИАЛИЗАТОРЫ А В КЛАССАХ ИХ ИМПОРТИРОВАТЬ И ВЫЗЫВАТЬ!
 
 print('asds')
 
 x = DataBaseManager()
 
-details = x.get_monuments()
+details = x.get_info_about_table('Monuments')
 print(details)  # ← без этого ничего не будет видно

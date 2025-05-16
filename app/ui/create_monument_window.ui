@@ -32,6 +32,9 @@
      <height>41</height>
     </rect>
    </property>
+   <property name="placeholderText">
+    <string>тест</string>
+   </property>
   </widget>
   <widget class="QLineEdit" name="resObjInsert">
    <property name="geometry">

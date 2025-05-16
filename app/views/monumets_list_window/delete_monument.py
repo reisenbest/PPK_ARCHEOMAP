@@ -1,17 +1,20 @@
 import os
 import sys
 import config
-from PyQt5.QtWidgets import QDialog
+from PyQt5.QtWidgets import QDialog, QMessageBox
 from PyQt5.QtCore import pyqtSlot, QObject
 from PyQt5.uic import loadUi
 
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..')))
+sys.path.append(os.path.abspath(os.path.join(
+    os.path.dirname(__file__), '..', '..', '..')))
+
 
 class DeleteMonumentView(QDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
         ui_path = os.path.join(config.UI_DIR, 'delete_monument_window.ui')
         loadUi(ui_path, self)  # Загружаем UI
+
 
 class DeleteMonumentController(QObject):
     def __init__(self, monument_details, db_manager, parent=None):
@@ -28,8 +31,17 @@ class DeleteMonumentController(QObject):
     def delete_monument(self):
         """Удаление памятника из базы данных по ID."""
         monument_id = self.monument_details['monument_id']
-        self.db_manager.delete_monument_by_id(monument_id)  # Удаляем памятник
-        self.view.accept()  # Закрытие окна после успешного удаления
+        try:
+            success = self.db_manager.delete_monument_by_id(monument_id)
+            if success:
+                self.view.accept()  # Удаление успешно — закрыть окно и вернуть Accepted
+            else:
+                QMessageBox.warning(self.view, "Ошибка",
+                                    "Не удалось удалить памятник.")
+        except Exception as e:
+            QMessageBox.critical(self.view, "Ошибка",
+                                 f"Произошла ошибка при удалении:\n{e}")
+            # Окно не закрывается, пользователь может попробовать снова
 
     @pyqtSlot()
     def cancel_delete(self):
@@ -40,4 +52,5 @@ class DeleteMonumentController(QObject):
         """Настройка подключения кнопок."""
         # Подключаем действия к кнопкам
         self.view.delMonumentBtn.clicked.connect(self.delete_monument)
-        self.view.cancelDelMonumentBtn.clicked.connect(self.cancel_delete)  # Обработчик кнопки "Отмена"
+        self.view.cancelDelMonumentBtn.clicked.connect(
+            self.cancel_delete)  # Обработчик кнопки "Отмена"

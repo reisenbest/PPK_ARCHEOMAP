@@ -1,5 +1,5 @@
 import os
-from PyQt5.QtWidgets import QWidget
+from PyQt5.QtWidgets import QWidget, QDialog
 from PyQt5.QtSql import QSqlTableModel
 from PyQt5.QtCore import QObject, pyqtSlot, Qt
 from PyQt5.uic import loadUi
@@ -79,21 +79,27 @@ class MonumentListController(QObject):
     @pyqtSlot()
     def create_monument(self):
         self.create_monument = CreateMonumentController(db_manager=self.db_manager)
-        self.create_monument.show()
+        result = self.create_monument.view.exec()
+        if result == QDialog.Accepted:
+            self.refresh_data()  # Обновляем после успешного создания
 
     @pyqtSlot()
     def update_monument(self):
-       if self.current_monument_id:
+        if self.current_monument_id:
             monument = self.db_manager.get_monument_by_id(self.current_monument_id)
             self.update_monument = UpdateMonumentController(monument_details=monument, db_manager=self.db_manager)
-            self.update_monument.show()
+            result = self.update_monument.view.exec()
+            if result == QDialog.Accepted:
+                self.refresh_data()
 
     @pyqtSlot()
     def delete_monument(self):
         if self.current_monument_id:
             monument = self.db_manager.get_monument_by_id(self.current_monument_id)
             self.delete_dialog = DeleteMonumentController(monument_details=monument, db_manager=self.db_manager)
-            self.delete_dialog.show()
+            result = self.delete_dialog.view.exec()
+            if result == QDialog.Accepted:
+                self.refresh_data()
 
     @pyqtSlot()
     def refresh_data(self):
