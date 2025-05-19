@@ -8,13 +8,14 @@ from views.monumets_list_window.read_monument import ReadMonumentController
 from views.monumets_list_window.delete_monument import DeleteMonumentController
 from views.monumets_list_window.update_monument import UpdateMonumentController
 from views.monumets_list_window.create_monument import CreateMonumentController
+from utils.base_classes import BaseView
 
 
-class MonumentListView(QWidget):
+
+class MonumentListView(QWidget, BaseView):
     def __init__(self, parent=None):
         super().__init__(parent)
-        ui_path = os.path.join(config.UI_DIR, "monuments_list_window.ui")
-        loadUi(ui_path, self)
+        self.load_ui("monuments_list_window.ui")
 
         # Настройка модели таблицы
         self.model = QSqlTableModel(self)

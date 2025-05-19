@@ -13,13 +13,14 @@ import config
 from views.map_window.map import MapController
 from views.information_window.information import InformationController
 from views.monumets_list_window.monuments_list import MonumentListController
+from utils.base_classes import BaseView
 
 
-class MainMenuView(QMainWindow):
+class MainMenuView(QMainWindow, BaseView):
     def __init__(self, parent=None):
         super().__init__(parent)
-        ui_path = os.path.join(config.UI_DIR, 'main_menu_window.ui')
-        loadUi(ui_path, self)  # Загружаем интерфейс из .ui файла
+        self.load_ui('main_menu_window.ui')
+
 
 
 class MainMenuController(QObject):  # Наследуем от QObject для работы с сигналами и слотами

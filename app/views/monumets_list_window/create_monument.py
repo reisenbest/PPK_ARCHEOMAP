@@ -6,18 +6,20 @@ from PyQt5.QtWidgets import QDialog, QMessageBox
 from PyQt5.QtCore import pyqtSlot, QObject
 from PyQt5.uic import loadUi
 import json
-
-
+from utils.base_classes import BaseView
+from utils.validate_manager import ValidateUILevelManager   
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..')))
 
-class CreateMonumentView(QDialog):
+
+
+
+class CreateMonumentView(QDialog, BaseView):
     def __init__(self, parent=None):
         super().__init__(parent)
-        ui_path = os.path.join(config.UI_DIR, 'create_monument_window.ui')
-        loadUi(ui_path, self)
-    
+        self.load_ui('create_monument_window.ui')
+
     def buttons_placeholders(self, table_info: dict):
-        name_placeholder = f'имя столбца: {table_info['name']['name']}, тип: {table_info['name']['type']}          '
+        name_placeholder = f'имя столбца: {table_info['name']['name']}, тип: {table_info['name']['type']}'
         description_placeholder = table_info['description']['name']
         research_object_placeholder = table_info['research_object']['name']
 
@@ -32,6 +34,7 @@ class CreateMonumentController(QObject):
         self.db_manager = db_manager
         self.setup_connections()
         self.set_placeholders()
+        self.validator = ValidateUILevelManager(db_manager=self.db_manager)
 
     def show(self):
         self.view.show()
@@ -60,20 +63,28 @@ class CreateMonumentController(QObject):
     
     @pyqtSlot()
     def create_monument(self):
-        data_to_insert = {}
+        data_to_insert = {
+            'name': self.view.nameInsert.text(),
+            'description': self.view.descriptionInsert.toPlainText(),
+            'research_object': self.view.resObjInsert.text()
+        }
 
-        data_to_insert['name'] = self.view.nameInsert.text()
-        data_to_insert['description'] = self.view.descriptionInsert.toPlainText()
-        data_to_insert['research_object'] = self.view.resObjInsert.text()
-        
+        # --- ВАЛИДАЦИЯ ---
+        is_valid, error_msg = self.validator.validate_create_method(data_to_insert)
+        if not is_valid:
+            QMessageBox.warning(self.view, "Ошибка валидации на уровне UI", error_msg)
+            return
+
+        # --- СОЗДАНИЕ ---
         try:
             success = self.db_manager.create_monument(data=data_to_insert)
             if success:
                 self.view.accept()
-            else:
-                QMessageBox.warning(self.view, "Ошибка", "Не удалось создать памятник.")
         except Exception as e:
-            QMessageBox.critical(self.view, "Ошибка", f"Произошла ошибка при создании:\n{e}")
+            QMessageBox.warning(self.view, "Ошибка валидации на уровне SQL", str(e))
+        
+            # raise
+
         
 
 

@@ -5,17 +5,15 @@ import config
 from PyQt5.QtWidgets import QDialog, QMessageBox
 from PyQt5.QtCore import pyqtSlot, QObject
 from PyQt5.uic import loadUi
-
-
+from utils.base_classes import BaseView
+from utils.validate_manager import ValidateUILevelManager   
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..')))
 
-class UpdateMonumentView(QDialog):
+class UpdateMonumentView(QDialog, BaseView):
     def __init__(self, parent=None):
         super().__init__(parent)
-        ui_path = os.path.join(config.UI_DIR, 'update_monument_window.ui')
-        loadUi(ui_path, self)
-
+        self.load_ui('update_monument_window.ui')
 
     def display_monument_data(self, monument_data):
         self.nameEdit.setText(monument_data['name'])
@@ -33,11 +31,12 @@ class UpdateMonumentController(QObject):
         self.monument_details = monument_details
         self.view.display_monument_data(monument_details)  # Заполняем окно данными
         self.setup_connections()
+        self.validator = ValidateUILevelManager(db_manager=self.db_manager)
 
     def show(self):
         self.view.show()
 
-    def setup_connections(self):
+    def setup_connections(self):                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            
         """Настройка подключения кнопок."""
         # Подключаем действия к кнопкам
         self.view.acceptUpdBtn.clicked.connect(self.update_monument)
@@ -57,16 +56,23 @@ class UpdateMonumentController(QObject):
         monument['description'] = self.view.descriptionEdit.toPlainText()
         monument['research_object'] = self.view.resObjEdit.text()
 
+
+        is_valid, error_msg = self.validator.validate_create_method(monument)
+        if not is_valid:
+            QMessageBox.warning(self.view, "Ошибка валидации на уровне UI", error_msg)
+            return
+        
+
         try:
             success = self.db_manager.update_monument_by_id(monument_id=monument['monument_id'],
                                               monument=monument)
             if success:
                 self.view.accept()  # обновление успешно — закрыть окно и вернуть Accepted
             else:
-                QMessageBox.warning(self.view, "Ошибка", "Не удалось обновить памятник.")
+                QMessageBox.warning(self.view, "Ошибка валидации на уровне sql", "Не удалось обновить памятник.")
 
         except Exception as e:
-             QMessageBox.critical(self.view, "Ошибка", f"Произошла ошибка при обновлении:\n{e}")
+             QMessageBox.critical(self.view, "Ошибка валидации на уровне sql", f"Произошла ошибка при обновлении:\n{e}")
         
 
 

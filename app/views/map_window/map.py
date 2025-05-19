@@ -6,17 +6,15 @@ from PyQt5.uic import loadUi # Импортируем функцию для за
 import config # здесь глобальные переменные хранятся
 from PyQt5.QtWebEngineWidgets import QWebEngineView
 from PyQt5.QtCore import QUrl, pyqtSlot, QObject
-
+from utils.base_classes import BaseView
 # Добавляем корневую директорию в sys.path
 # Обеспечиваем корректный импорт при запуске из корня
 
 
-
-class MapView(QWidget):
+class MapView(QWidget, BaseView):
     def __init__(self):
         super().__init__()
-        ui_path = os.path.join(config.UI_DIR, 'map_window.ui')
-        loadUi(ui_path, self)
+        self.load_ui('map_window.ui')
 
         # Получаем QWebEngineView по имени из .ui
         self.web_view: QWebEngineView = self.findChild(QWebEngineView, "MapContainer")

@@ -1,14 +1,14 @@
 
 
+import config
 import sys
 import os
 
 from PyQt5.QtSql import QSqlDatabase, QSqlQuery
 from PyQt5.QtSql import QSqlError
-
+from typing import List, Dict, Union
 # TODO сделать одну точку входа базы данных при входе в приложение открывается коннект и им все пользуются
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-import config
 # class DataBaseConnection(QSqlDatabase):
 #   """docstring for ClassName."""
 #   def __init__(self, parent=None):
@@ -25,11 +25,6 @@ import config
 #       print('connection error', file=sys.stderr)
 
 
-import os
-import config
-from PyQt5.QtSql import QSqlDatabase, QSqlQuery
-
-
 class DataBaseManager:
     '''
     Класс для работы с БД SQLite через QtSql.
@@ -37,22 +32,32 @@ class DataBaseManager:
     '''
 
     def __init__(self):
+        # подключение БД, инициализация
         self.db = QSqlDatabase.addDatabase("QSQLITE")
+        # формирует путь к файлу базы данных.
         self.db_path = os.path.join(config.DATABASE_DIR, 'database.db')
+        # говорим QT какую БД использовать для подключения
         self.db.setDatabaseName(self.db_path)
 
+        # выкидывает ошибку и закрывает приложение если не удалось открыть БД
         if not self.db.open():
-            raise Exception(f"Не удалось открыть базу данных: {self.db.lastError().text()}")
+            raise Exception(
+                f"Не удалось открыть базу данных: {self.db.lastError().text()}")
 
-        # Включаем поддержку внешних ключей — важно передать self.db
+        # Включаем поддержку внешних ключей — важно передать self.db - подключение которое используется
         QSqlQuery("PRAGMA foreign_keys = ON", self.db)
 
-    def close(self):
+    def close(self) -> None:
         """Закрыть соединение с базой данных."""
         self.db.close()
 
     def get_monuments(self):
-        """Получить список памятников (ID и имя)."""
+        """Получить список памятников (ID и имя).
+        """
+        # создание запроса с на получение полей id & name из таблицы  Monuments
+        # создание пустого списка для их хранения
+        # идем по записям пока они не кончатся и добалвяем в список словарь  1 столбец из полученной строки в id 2 столбец в name
+        # возвращает список памятников где каждый памятник - отдельный словарь
         query = QSqlQuery("SELECT monument_id, name FROM Monuments", self.db)
         monuments = []
         while query.next():
@@ -63,32 +68,81 @@ class DataBaseManager:
         return monuments
 
     def get_monument_by_id(self, monument_id: int):
+        validator = ValidateSQLLevelManager(
+            db_manager=self, monument_data=monument_id)
+        is_valid, error_msg = validator.validate_read_method()
+        if not is_valid:
+            # Возвращаем или выбрасываем ошибку, чтобы контроллер мог её обработать
+            raise Exception(error_msg)
         """Получить один памятник по ID."""
+
+        # Создаём объект запроса QSqlQuery, связанный с текущим подключением к базе данных
         query = QSqlQuery(self.db)
+
+        # Подготавливаем SQL-запрос с параметром-заполнителем '?'
+        # Запрос выбирает все столбцы (*) из таблицы Monuments, где поле monument_id равно переданному параметру
         query.prepare("SELECT * FROM Monuments WHERE monument_id = ?")
+
+        # Привязываем конкретное значение monument_id к параметру '?' в SQL-запросе
         query.addBindValue(monument_id)
+
+        # Выполняем запрос и проверяем, что он выполнен успешно и что получена хотя бы одна запись
         if query.exec() and query.next():
+
+            # Если запись есть, создаём пустой словарь для хранения данных из результата
             record = {}
-            for i in range(query.record().count()):
-                record[query.record().fieldName(i)] = query.value(i)
+
+            # Получаем количество столбцов в записи (результате запроса)
+            columns_count = query.record().count()
+
+            # Перебираем все столбцы в записи по индексам от 0 до количества столбцов - 1
+            for i in range(columns_count):
+
+                # Получаем имя текущего столбца по индексу i
+                column_name = query.record().fieldName(i)
+
+                # Получаем значение поля из результата запроса по индексу i
+                column_value = query.value(i)
+
+                # Записываем пару ключ-значение в словарь: имя столбца — значение этого столбца
+                record[column_name] = column_value
+
+            # Возвращаем словарь с данными памятника (все поля из таблицы)
             return record
+
+        # Если запрос не выполнился или запись с таким monument_id не найдена — возвращаем None
         return None
-    
+
     def create_monument(self, data: dict):
         """Создать новый памятник."""
+
+        """Создать новый памятник с проверкой валидации на уровне БД."""
+        # Создаём экземпляр валидатора и передаём self (db_manager) и данные
+        validator = ValidateSQLLevelManager(
+            db_manager=self, monument_data=data)
+
+        # Проверяем валидацию
+        is_valid, error_msg = validator.validate_create_method()
+        if not is_valid:
+            # Возвращаем или выбрасываем ошибку, чтобы контроллер мог её обработать
+            raise Exception(error_msg)
+
+        self.monument_data = data
         query = QSqlQuery(self.db)
         query.prepare("""
             INSERT INTO Monuments (name, description, research_object)
             VALUES (?, ?, ?)
         """)
 
-        query.addBindValue(data['name'])
-        query.addBindValue(data['description'])
-        query.addBindValue(data['research_object'])
+        query.addBindValue(self.monument_data['name'])
+        query.addBindValue(self.monument_data['description'])
+        query.addBindValue(self.monument_data['research_object'])
         if not query.exec():
-            raise Exception(f"Ошибка при добавлении памятника: {query.lastError().text()}")
+            raise Exception(
+                f"Ошибка при добавлении памятника: {query.lastError().text()}")
 
-        return True #возвращается True если все успешно. Это тру потом используется при CRUD операциях, при обработке ошибок и обновлении окна со списоком памятников после CRUD операций
+        return True  # возвращается True если все успешно. Это тру потом используется при CRUD операциях, при обработке ошибок и обновлении окна со списоком памятников после CRUD операций
+
     def update_monument_by_id(self, monument_id: int, monument: dict):
         """
         Обновить поля памятника по ID.
@@ -96,6 +150,14 @@ class DataBaseManager:
         """
         if not monument:
             return  # Нечего обновлять
+
+        validator = ValidateSQLLevelManager(
+            db_manager=self, monument_data=monument)
+        # Проверяем валидацию
+        is_valid, error_msg = validator.validate_update_method()
+        if not is_valid:
+            # Возвращаем или выбрасываем ошибку, чтобы контроллер мог её обработать
+            raise Exception(error_msg)
 
         set_parts = [f"{key} = ?" for key in monument.keys()]
         set_clause = ", ".join(set_parts)
@@ -113,18 +175,30 @@ class DataBaseManager:
         query.addBindValue(monument_id)
 
         if not query.exec():
-            raise Exception(f"Ошибка при обновлении памятника: {query.lastError().text()}")
+            raise Exception(
+                f"Ошибка при обновлении памятника: {query.lastError().text()}")
 
-        return True #возвращается True если все успешно. Это тру потом используется при CRUD операциях, при обработке ошибок и обновлении окна со списоком памятников после CRUD операций
+        return True  # возвращается True если все успешно. Это тру потом используется при CRUD операциях, при обработке ошибок и обновлении окна со списоком памятников после CRUD операций
+
     def delete_monument_by_id(self, monument_id: int):
         """Удалить памятник по ID."""
+
+        validator = ValidateSQLLevelManager(
+            db_manager=self, monument_data=monument_id)
+        is_valid, error_msg = validator.validate_read_method()
+        if not is_valid:
+            # Возвращаем или выбрасываем ошибку, чтобы контроллер мог её обработать
+            raise Exception(error_msg)
+
         query = QSqlQuery(self.db)
         query.prepare("DELETE FROM Monuments WHERE monument_id = ?")
         query.addBindValue(monument_id)
         if not query.exec():
-            raise Exception(f"Ошибка при удалении памятника: {query.lastError().text()}")
-        
-        return True #возвращается True если все успешно. Это тру потом используется при CRUD операциях, при обработке ошибок и обновлении окна со списоком памятников после CRUD операций
+            raise Exception(
+                f"Ошибка при удалении памятника: {query.lastError().text()}")
+
+        return True  # возвращается True если все успешно. Это тру потом используется при CRUD операциях, при обработке ошибок и обновлении окна со списоком памятников после CRUD операций
+
     def get_info_about_table(self, table_name: str):
         # Создаём объект запроса, используя подключение к базе
         query = QSqlQuery(self.db)
@@ -154,12 +228,17 @@ class DataBaseManager:
             # 5: pk             — флаг: 1, если это часть первичного ключа
 
             column_info = {
-                "cid": query.value(0),                    # Порядковый номер столбца
+                # Порядковый номер столбца
+                "cid": query.value(0),
                 "name": query.value(1),                   # Имя столбца
-                "type": query.value(2),                   # Тип данных (например, TEXT, INTEGER)
-                "notnull": bool(query.value(3)),          # True, если поле обязательно для заполнения
-                "default_value": query.value(4),          # Значение по умолчанию (или None)
-                "primary_key": bool(query.value(5))       # True, если это поле является частью первичного ключа
+                # Тип данных (например, TEXT, INTEGER)
+                "type": query.value(2),
+                # True, если поле обязательно для заполнения
+                "notnull": bool(query.value(3)),
+                # Значение по умолчанию (или None)
+                "default_value": query.value(4),
+                # True, если это поле является частью первичного ключа
+                "primary_key": bool(query.value(5))
             }
 
             # Добавляем словарь с информацией о колонке в общий список
@@ -170,9 +249,124 @@ class DataBaseManager:
 
 # TODO  НАПИСАТЬ В БД КЛАССЕ МЕТОДЫ КРУД И СЕРИАЛИЗАТОРЫ А В КЛАССАХ ИХ ИМПОРТИРОВАТЬ И ВЫЗЫВАТЬ!
 
-print('asds')
 
-x = DataBaseManager()
+class ValidateSQLLevelManager:
+    """
+    Проверяет валидацию на уровне БД — уникальность имени памятника.
+    """
 
-details = x.get_info_about_table('Monuments')
-print(details)  # ← без этого ничего не будет видно
+    def __init__(self, db_manager, monument_data: dict, ):
+        self.db_manager = db_manager
+        self.db = db_manager.db  # доступ к QSqlDatabase
+        self.monument_data = monument_data
+
+    def validate_create_method(self) -> (bool, str):
+        checks = [
+            # self._check_name_not_empty,
+            self._check_name_unique_create_method,
+            # self._check_description,
+            # self._check_research_object,
+        ]
+        for check in checks:
+            ok, msg = check()
+            if not ok:
+                return False, msg
+        return True, ""
+
+    def validate_read_method(self) -> (bool, str):
+        checks = [
+            self._check_exist_monument_id
+        ]
+        for check in checks:
+            ok, msg = check()
+            if not ok:
+                return False, msg
+        return True, ""
+
+    def validate_update_method(self) -> (bool, str):
+        checks = [
+            # self._check_name_not_empty,
+            self._check_name_unique_update_method,
+            # self._check_description,
+            # self._check_research_object,
+        ]
+        for check in checks:
+            ok, msg = check()
+            if not ok:
+                return False, msg
+        return True, ""
+
+    def _check_name_not_empty(self):
+        pass
+
+    def _check_name_unique_create_method(self):
+        name = self.monument_data.get('name', '').strip()
+        query = QSqlQuery(self.db)
+        query.prepare("SELECT COUNT(*) FROM Monuments WHERE name = ?")
+        query.addBindValue(name)
+        if not query.exec():
+            return False, f"Ошибка при выполнении SQL-запроса: {query.lastError().text()}"
+        if query.next() and query.value(0) > 0:
+            return False, f"Памятник с именем '{name}' уже существует"
+        return True, ""
+
+    def _check_description(self):
+        pass
+
+    def _check_research_object(self):
+        pass
+
+    def _check_name_unique_update_method(self):
+        name = self.monument_data.get('name', '').strip()
+        current_id = self.monument_data.get(
+            'monument_id')  # Получаем ID текущей записи
+
+        query = QSqlQuery(self.db)
+        query.prepare("""
+            SELECT COUNT(*) 
+            FROM Monuments 
+            WHERE name = ? AND monument_id != ?
+        """)
+        query.addBindValue(name)
+        query.addBindValue(current_id)  # Исключаем текущую запись из проверки
+
+        if not query.exec():
+            return False, f"Ошибка при выполнении SQL-запроса: {query.lastError().text()}"
+
+        if query.next() and query.value(0) > 0:
+            return False, f"Памятник с именем '{name}' уже существует"
+
+        return True, ""
+
+    def _check_exist_monument_id(self) -> bool:
+        """
+        Проверяет, существует ли памятник с monument_id из self.monument_data в базе.
+
+        Возвращает:
+            True, если запись с таким monument_id существует,
+            False, если нет или monument_id не задан.
+        """
+        monument_id = self.monument_data.get('monument_id')
+        if monument_id is None:
+            # Если ID нет в данных, считать, что записи нет
+            return False
+
+        query = QSqlQuery(self.db)
+        # Подготавливаем запрос для поиска записи с заданным ID
+        query.prepare("SELECT 1 FROM Monuments WHERE monument_id = ? LIMIT 1")
+        query.addBindValue(monument_id)
+
+        if not query.exec():
+            # Ошибка при выполнении запроса - можно логировать или выбрасывать исключение
+            return False
+
+        # Если есть хотя бы одна запись, query.next() вернёт True
+        return query.next()
+
+
+# print('asds')
+
+# x = DataBaseManager()
+
+# details = x.get_info_about_table('Monuments')
+# print(details)  # ← без этого ничего не будет видно

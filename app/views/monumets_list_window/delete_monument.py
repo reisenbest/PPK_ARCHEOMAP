@@ -4,16 +4,16 @@ import config
 from PyQt5.QtWidgets import QDialog, QMessageBox
 from PyQt5.QtCore import pyqtSlot, QObject
 from PyQt5.uic import loadUi
-
+from utils.base_classes import BaseView
 sys.path.append(os.path.abspath(os.path.join(
     os.path.dirname(__file__), '..', '..', '..')))
 
 
-class DeleteMonumentView(QDialog):
+class DeleteMonumentView(QDialog, BaseView):
     def __init__(self, parent=None):
         super().__init__(parent)
-        ui_path = os.path.join(config.UI_DIR, 'delete_monument_window.ui')
-        loadUi(ui_path, self)  # Загружаем UI
+        self.load_ui('delete_monument_window.ui')
+
 
 
 class DeleteMonumentController(QObject):
