@@ -51,6 +51,23 @@ class DataBaseManager:
         """Закрыть соединение с базой данных."""
         self.db.close()
 
+        """
+        SELECT 
+            m.monument_id,
+            m.name,
+            m.description,
+            m.research_object
+            c.latitude,
+            c.longitude,
+            c.note
+        FROM Monuments m
+        LEFT JOIN 
+            Coordinates c
+            ON m.monuments_id c.monuments_id
+
+
+        """
+
     def get_monuments(self):
         """Получить список памятников (ID и имя).
         """
@@ -58,13 +75,29 @@ class DataBaseManager:
         # создание пустого списка для их хранения
         # идем по записям пока они не кончатся и добалвяем в список словарь  1 столбец из полученной строки в id 2 столбец в name
         # возвращает список памятников где каждый памятник - отдельный словарь
-        query = QSqlQuery("SELECT monument_id, name FROM Monuments", self.db)
+        query = QSqlQuery("""
+                            SELECT 
+                                m.monument_id,
+                                m.name,
+                                m.description,
+                                m.research_object,
+                                c.latitude,
+                                c.longitude,
+                                c.note
+                            FROM Monuments m
+                            LEFT JOIN Coordinates c ON m.monument_id = c.monument_id
+                        """, self.db_manager.db)
+
         monuments = []
         while query.next():
-            monuments.append({
-                "monument_id": query.value(0),
-                "name": query.value(1)
-            })
+            record = {}
+            columns_count = query.record().count()
+            for i in range(columns_count):
+                column_name = query.record().fieldName(i)
+                column_value = query.value(i)
+                record[column_name] = column_value
+            monuments.append(record)
+
         return monuments
 
     def get_monument_by_id(self, monument_id: int):
@@ -81,7 +114,19 @@ class DataBaseManager:
 
         # Подготавливаем SQL-запрос с параметром-заполнителем '?'
         # Запрос выбирает все столбцы (*) из таблицы Monuments, где поле monument_id равно переданному параметру
-        query.prepare("SELECT * FROM Monuments WHERE monument_id = ?")
+        query.prepare("""
+                            SELECT 
+                                m.monument_id,
+                                m.name,
+                                m.description,
+                                m.research_object,
+                                c.latitude,
+                                c.longitude,
+                                c.note
+                            FROM Monuments m
+                            LEFT JOIN Coordinates c ON m.monument_id = c.monument_id
+                            WHERE m.monument_id = ?
+                        """)
 
         # Привязываем конкретное значение monument_id к параметру '?' в SQL-запросе
         query.addBindValue(monument_id)
@@ -108,6 +153,7 @@ class DataBaseManager:
                 record[column_name] = column_value
 
             # Возвращаем словарь с данными памятника (все поля из таблицы)
+            print(record)
             return record
 
         # Если запрос не выполнился или запись с таким monument_id не найдена — возвращаем None
@@ -148,6 +194,7 @@ class DataBaseManager:
         Обновить поля памятника по ID.
         Универсальный вариант — список полей задаётся динамически через словарь monument.
         """
+        monument_id = {'monument_id': monument_id}
         if not monument:
             return  # Нечего обновлять
 
@@ -182,7 +229,6 @@ class DataBaseManager:
 
     def delete_monument_by_id(self, monument_id: int):
         """Удалить памятник по ID."""
-
         validator = ValidateSQLLevelManager(
             db_manager=self, monument_data=monument_id)
         is_valid, error_msg = validator.validate_read_method()
@@ -346,22 +392,17 @@ class ValidateSQLLevelManager:
             True, если запись с таким monument_id существует,
             False, если нет или monument_id не задан.
         """
-        monument_id = self.monument_data.get('monument_id')
-        if monument_id is None:
-            # Если ID нет в данных, считать, что записи нет
-            return False
-
-        query = QSqlQuery(self.db)
-        # Подготавливаем запрос для поиска записи с заданным ID
-        query.prepare("SELECT 1 FROM Monuments WHERE monument_id = ? LIMIT 1")
+        monument_id = self.monument_data
+        query = QSqlQuery(self.db_manager.db)
+        query.prepare("SELECT COUNT(*) FROM Monuments WHERE monument_id = ?")
         query.addBindValue(monument_id)
-
-        if not query.exec():
-            # Ошибка при выполнении запроса - можно логировать или выбрасывать исключение
-            return False
-
-        # Если есть хотя бы одна запись, query.next() вернёт True
-        return query.next()
+        if query.exec() and query.next():
+            count = query.value(0)
+            if count > 0:
+                return True, ""
+            else:
+                return False, f"Памятник с ID {monument_id} не найден."
+        return False, "Ошибка при проверке существования памятника."
 
 
 # print('asds')

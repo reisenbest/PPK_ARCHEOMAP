@@ -3,6 +3,7 @@ from PyQt5.QtWidgets import QApplication
 from views.main_menu_window.main_menu import MainMenuController
 from database.db_main_connection import DataBaseManager
 
+
 def main():
     app = QApplication(sys.argv)
 
@@ -18,6 +19,7 @@ def main():
     # Закрываем соединение при завершении
     db_manager.close()
     sys.exit(exit_code)
+
 
 if __name__ == "__main__":
     main()

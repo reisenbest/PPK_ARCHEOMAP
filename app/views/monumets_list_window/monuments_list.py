@@ -1,6 +1,6 @@
 import os
 from PyQt5.QtWidgets import QWidget, QDialog
-from PyQt5.QtSql import QSqlTableModel
+from PyQt5.QtSql import QSqlTableModel, QSqlQueryModel
 from PyQt5.QtCore import QObject, pyqtSlot, Qt
 from PyQt5.uic import loadUi
 import config
@@ -17,17 +17,24 @@ class MonumentListView(QWidget, BaseView):
         super().__init__(parent)
         self.load_ui("monuments_list_window.ui")
 
-        # Настройка модели таблицы
-        self.model = QSqlTableModel(self)
-        self.model.setTable("Monuments")
-        self.model.select()
-        self.model.setHeaderData(0, Qt.Horizontal, "ID")
-        self.model.setHeaderData(1, Qt.Horizontal, "Название")
+        # Используем QSqlQueryModel для JOIN-запроса
+        self.model = QSqlQueryModel(self)
+        self.model.setQuery("""
+            SELECT 
+                m.monument_id AS "ID",
+                m.name AS "Название",
+                m.description AS "Описание",
+                m.research_object AS "Объект исследования",
+                c.latitude AS "Широта",
+                c.longitude AS "Долгота",
+                c.note AS "Примечание"
+            FROM Monuments m
+            LEFT JOIN Coordinates c ON m.monument_id = c.monument_id
+        """)
 
         self.monumentsTableView.setModel(self.model)
         self.monumentsTableView.resizeColumnsToContents()
         self.monumentsTableView.setSortingEnabled(True)
-
 
 class MonumentListController(QObject):
     def __init__(self, db_manager, parent=None):

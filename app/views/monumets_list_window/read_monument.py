@@ -34,6 +34,12 @@ class ReadMonumentView(QDialog, BaseView):
             <p>{data['description']}</p>
             <h2>Объект</h2>
             <p>{data['research_object']}</p>
+            <h2>Широта</h2>
+            <p>{data['latitude']}</p>
+            <h2>Долгота</h2>
+            <p>{data['longitude']}</p>
+            <h2>Записка о координатах</h2>
+            <p>{data['note']}</p>
         """
         self.MonumentContainer.setHtml(content)
 
