@@ -16,9 +16,15 @@ class UpdateMonumentView(QDialog, BaseView):
         self.load_ui('update_monument_window.ui')
 
     def display_monument_data(self, monument_data):
+        print(
+            'peoverka ',monument_data)
         self.nameEdit.setText(monument_data['name'])
         self.descriptionEdit.setText(monument_data['description'])
         self.resObjEdit.setText(monument_data['research_object'])
+        self.latitudeEdit.setValue(monument_data['latitude'])
+        self.longitudeEdit.setValue(monument_data['longitude'])
+        self.coordNoteEdit.setText(monument_data['note'])
+        
 
 
         
@@ -29,7 +35,7 @@ class UpdateMonumentController(QObject):
         self.view = UpdateMonumentView()
         self.db_manager = db_manager
         self.monument_details = monument_details
-        self.view.display_monument_data(monument_details)  # Заполняем окно данными
+        self.view.display_monument_data(monument_data=monument_details)  # Заполняем окно данными
         self.setup_connections()
         self.validator = ValidateUILevelManager(db_manager=self.db_manager)
 
@@ -51,11 +57,13 @@ class UpdateMonumentController(QObject):
     def update_monument(self):
         
         monument = self.monument_details
-
         monument['name'] = self.view.nameEdit.text()
         monument['description'] = self.view.descriptionEdit.toPlainText()
         monument['research_object'] = self.view.resObjEdit.text()
-
+        monument['latitude'] = self.view.latitudeEdit.value()
+        monument['longitude'] = self.view.longitudeEdit.value()
+        monument['note'] = self.view.coordNoteEdit.toPlainText()
+        
 
         is_valid, error_msg = self.validator.validate_create_method(monument)
         if not is_valid:

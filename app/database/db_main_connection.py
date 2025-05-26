@@ -7,22 +7,11 @@ import os
 from PyQt5.QtSql import QSqlDatabase, QSqlQuery
 from PyQt5.QtSql import QSqlError
 from typing import List, Dict, Union
+
 # TODO сделать одну точку входа базы данных при входе в приложение открывается коннект и им все пользуются
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-# class DataBaseConnection(QSqlDatabase):
-#   """docstring for ClassName."""
-#   def __init__(self, parent=None):
-#     super().__init__(parent)
-#     self.db_coonnection()
-
-#   def db_coonnection(self):
-
-
-#     connection_status = db.open()
-#     if connection_status:
-#       print('succesful connection to database', file=sys.stderr)
-#     else:
-#       print('connection error', file=sys.stderr)
+from database.db_validate import ValidateSQLLevelManager
+from database.db_queries import DataBaseQueries
 
 
 class DataBaseManager:
@@ -30,43 +19,30 @@ class DataBaseManager:
     Класс для работы с БД SQLite через QtSql.
     Поддерживает единое подключение и основные CRUD-операции.
     '''
+    _instance = None
 
-    def __init__(self):
-        # подключение БД, инициализация
+    def __new__(cls):
+        if cls._instance is None:
+            cls._instance = super(DataBaseManager, cls).__new__(cls)
+            cls._instance._init_db()
+        return cls._instance
+
+    def _init_db(self):
         self.db = QSqlDatabase.addDatabase("QSQLITE")
-        # формирует путь к файлу базы данных.
         self.db_path = os.path.join(config.DATABASE_DIR, 'database.db')
-        # говорим QT какую БД использовать для подключения
         self.db.setDatabaseName(self.db_path)
+        self.db_queries = DataBaseQueries()
 
-        # выкидывает ошибку и закрывает приложение если не удалось открыть БД
         if not self.db.open():
-            raise Exception(
-                f"Не удалось открыть базу данных: {self.db.lastError().text()}")
+            raise Exception(f"Не удалось открыть базу данных: {self.db.lastError().text()}")
 
-        # Включаем поддержку внешних ключей — важно передать self.db - подключение которое используется
         QSqlQuery("PRAGMA foreign_keys = ON", self.db)
 
     def close(self) -> None:
         """Закрыть соединение с базой данных."""
-        self.db.close()
-
-        """
-        SELECT 
-            m.monument_id,
-            m.name,
-            m.description,
-            m.research_object
-            c.latitude,
-            c.longitude,
-            c.note
-        FROM Monuments m
-        LEFT JOIN 
-            Coordinates c
-            ON m.monuments_id c.monuments_id
-
-
-        """
+        if self.db.isOpen():
+            self.db.close()
+            QSqlDatabase.removeDatabase("qt_sql_default_connection")  # если singleton
 
     def get_monuments(self):
         """Получить список памятников (ID и имя).
@@ -75,18 +51,7 @@ class DataBaseManager:
         # создание пустого списка для их хранения
         # идем по записям пока они не кончатся и добалвяем в список словарь  1 столбец из полученной строки в id 2 столбец в name
         # возвращает список памятников где каждый памятник - отдельный словарь
-        query = QSqlQuery("""
-                            SELECT 
-                                m.monument_id,
-                                m.name,
-                                m.description,
-                                m.research_object,
-                                c.latitude,
-                                c.longitude,
-                                c.note
-                            FROM Monuments m
-                            LEFT JOIN Coordinates c ON m.monument_id = c.monument_id
-                        """, self.db_manager.db)
+        query = QSqlQuery(self.db_queries.get_monuments(), self.db)
 
         monuments = []
         while query.next():
@@ -114,19 +79,7 @@ class DataBaseManager:
 
         # Подготавливаем SQL-запрос с параметром-заполнителем '?'
         # Запрос выбирает все столбцы (*) из таблицы Monuments, где поле monument_id равно переданному параметру
-        query.prepare("""
-                            SELECT 
-                                m.monument_id,
-                                m.name,
-                                m.description,
-                                m.research_object,
-                                c.latitude,
-                                c.longitude,
-                                c.note
-                            FROM Monuments m
-                            LEFT JOIN Coordinates c ON m.monument_id = c.monument_id
-                            WHERE m.monument_id = ?
-                        """)
+        query.prepare(self.db_queries.get_monument_by_id())
 
         # Привязываем конкретное значение monument_id к параметру '?' в SQL-запросе
         query.addBindValue(monument_id)
@@ -153,79 +106,156 @@ class DataBaseManager:
                 record[column_name] = column_value
 
             # Возвращаем словарь с данными памятника (все поля из таблицы)
-            print(record)
             return record
 
         # Если запрос не выполнился или запись с таким monument_id не найдена — возвращаем None
         return None
 
     def create_monument(self, data: dict):
-        """Создать новый памятник."""
+        """
+        Создаёт памятник и, при наличии, добавляет координаты.
 
-        """Создать новый памятник с проверкой валидации на уровне БД."""
-        # Создаём экземпляр валидатора и передаём self (db_manager) и данные
-        validator = ValidateSQLLevelManager(
-            db_manager=self, monument_data=data)
+        :param data: словарь с полями для таблиц Monuments и Coordinates.
+                    Пример:
+                    {
+                        "name": "Башня",
+                        "description": "Остатки оборонительной башни",
+                        "research_object": "Фундамент",
+                        "latitude": 59.95,
+                        "longitude": 30.30,
+                        "note": "Северо-запад"
+                    }
+        """
+        if not data:
+            raise Exception("Нет данных для создания памятника")
 
-        # Проверяем валидацию
+        # Разделяем входные данные на 2 группы: для Monuments и для Coordinates
+        monument_fields = {"name", "description", "research_object"}
+        coordinates_fields = {"latitude", "longitude", "note"}
+
+        monument_data = {k: v for k, v in data.items() if k in monument_fields}
+        coord_data = {k: v for k, v in data.items() if k in coordinates_fields}
+
+        # Валидация данных
+        validator = ValidateSQLLevelManager(db_manager=self, monument_data=data)
         is_valid, error_msg = validator.validate_create_method()
         if not is_valid:
-            # Возвращаем или выбрасываем ошибку, чтобы контроллер мог её обработать
             raise Exception(error_msg)
 
-        self.monument_data = data
+        # === Вставка памятника ===
         query = QSqlQuery(self.db)
-        query.prepare("""
-            INSERT INTO Monuments (name, description, research_object)
-            VALUES (?, ?, ?)
-        """)
+        query.prepare(self.db_queries.create_monument())  # например: "INSERT INTO Monuments (name, description, research_object) VALUES (?, ?, ?)"
 
-        query.addBindValue(self.monument_data['name'])
-        query.addBindValue(self.monument_data['description'])
-        query.addBindValue(self.monument_data['research_object'])
+        query.addBindValue(monument_data.get('name'))
+        query.addBindValue(monument_data.get('description'))
+        query.addBindValue(monument_data.get('research_object'))
+
         if not query.exec():
-            raise Exception(
-                f"Ошибка при добавлении памятника: {query.lastError().text()}")
+            raise Exception(f"Ошибка при добавлении памятника: {query.lastError().text()}")
 
-        return True  # возвращается True если все успешно. Это тру потом используется при CRUD операциях, при обработке ошибок и обновлении окна со списоком памятников после CRUD операций
+        # Получаем ID только что вставленного памятника
+        monument_id = query.lastInsertId()
+
+        # === Вставка координат, если они указаны ===
+        if coord_data:
+            # Собираем список имён колонок: ключи из coord_data + monument_id
+            fields_clause = ", ".join(coord_data.keys()) + ", monument_id"
+            # Генерируем такое же количество "?" — плейсхолдеров
+            placeholders = ", ".join(["?"] * len(coord_data)) + ", ?"
+
+            # Собираем сам SQL-запрос
+
+            coord_query = QSqlQuery(self.db)
+            coord_query.prepare(self.db_queries.create_coordinate(fields_clause=fields_clause, placeholders=placeholders))
+
+            # Последовательно добавляем значения: сначала из coord_data, потом monument_id
+            for value in coord_data.values():
+                coord_query.addBindValue(value)
+            coord_query.addBindValue(monument_id)
+
+            if not coord_query.exec():
+                raise Exception(f"Ошибка при добавлении координат: {coord_query.lastError().text()}")
+
+        return True
 
     def update_monument_by_id(self, monument_id: int, monument: dict):
         """
-        Обновить поля памятника по ID.
-        Универсальный вариант — список полей задаётся динамически через словарь monument.
+        Обновить памятник и его координаты по monument_id.
         """
-        monument_id = {'monument_id': monument_id}
-        if not monument:
-            return  # Нечего обновлять
 
-        validator = ValidateSQLLevelManager(
-            db_manager=self, monument_data=monument)
-        # Проверяем валидацию
+        if not monument:
+            return
+
+        # Разделение на поля Monuments и Coordinates
+        monument_fields = {"name", "description", "research_object"}
+        coordinates_fields = {"latitude", "longitude", "note"}
+
+        monument_data = {k: v for k, v in monument.items() if k in monument_fields}
+        coord_data = {k: v for k, v in monument.items() if k in coordinates_fields}
+
+        # Валидация (если нужно, можно проверить и по частям)
+        validator = ValidateSQLLevelManager(db_manager=self, monument_data=monument)
         is_valid, error_msg = validator.validate_update_method()
         if not is_valid:
-            # Возвращаем или выбрасываем ошибку, чтобы контроллер мог её обработать
             raise Exception(error_msg)
 
-        set_parts = [f"{key} = ?" for key in monument.keys()]
-        set_clause = ", ".join(set_parts)
-        values = list(monument.values())
+        # === Обновление Monuments ===
+        if monument_data:
+            set_parts = [f"{key} = ?" for key in monument_data.keys()]
+            set_clause = ", ".join(set_parts)
+            values = list(monument_data.values())
 
-        query = QSqlQuery(self.db)
-        query.prepare(f"""
-            UPDATE Monuments
-            SET {set_clause}
-            WHERE monument_id = ?
-        """)
+            query = QSqlQuery(self.db)
+            query.prepare(self.db_queries.update_monument_by_id(set_clause=set_clause))
+            for value in values:
+                query.addBindValue(value)
+            query.addBindValue(monument_id)
 
-        for value in values:
-            query.addBindValue(value)
-        query.addBindValue(monument_id)
+            if not query.exec():
+                raise Exception(f"Ошибка при обновлении Monuments: {query.lastError().text()}")
 
-        if not query.exec():
-            raise Exception(
-                f"Ошибка при обновлении памятника: {query.lastError().text()}")
+        # === Обновление Coordinates ===
+        if coord_data:
+            # Проверим, есть ли вообще координаты у этого monument_id
+            check_query = QSqlQuery(self.db)
+            check_query.prepare(self.db_queries.get_coordinate_by_monument_id())
+            check_query.addBindValue(monument_id)
 
-        return True  # возвращается True если все успешно. Это тру потом используется при CRUD операциях, при обработке ошибок и обновлении окна со списоком памятников после CRUD операций
+            if not check_query.exec():
+                raise Exception(f"Ошибка при проверке координат: {check_query.lastError().text()}")
+
+            coord_exists = check_query.next()
+            coord_id = check_query.value(0) if coord_exists else None
+
+            set_parts = [f"{key} = ?" for key in coord_data.keys()]
+            set_clause = ", ".join(set_parts)
+            values = list(coord_data.values())
+
+            if coord_exists:
+                # Обновление координат
+                query = QSqlQuery(self.db)
+                query.prepare(self.db_queries.update_coordinate_by_monument_id(set_clause=set_clause))
+                for value in values:
+                    query.addBindValue(value)
+                query.addBindValue(monument_id)
+
+                if not query.exec():
+                    raise Exception(f"Ошибка при обновлении Coordinates: {query.lastError().text()}")
+
+            else:
+                # Вставка новой записи в Coordinates
+                fields_clause = ", ".join(coord_data.keys()) + ", monument_id"
+                placeholders = ", ".join(["?"] * len(coord_data)) + ", ?"
+                query = QSqlQuery(self.db)
+                query.prepare(self.db_queries.create_coordinate_by_monument_id(fields_clause=fields_clause, placeholders=placeholders))
+                for value in values:
+                    query.addBindValue(value)
+                query.addBindValue(monument_id)
+
+                if not query.exec():
+                    raise Exception(f"Ошибка при добавлении Coordinates: {query.lastError().text()}")
+
+        return True
 
     def delete_monument_by_id(self, monument_id: int):
         """Удалить памятник по ID."""
@@ -237,7 +267,7 @@ class DataBaseManager:
             raise Exception(error_msg)
 
         query = QSqlQuery(self.db)
-        query.prepare("DELETE FROM Monuments WHERE monument_id = ?")
+        query.prepare(self.db_queries.delete_monument_by_id())
         query.addBindValue(monument_id)
         if not query.exec():
             raise Exception(
@@ -292,117 +322,10 @@ class DataBaseManager:
 
         # Возвращаем список словарей — по одному на каждую колонку таблицы
         return table_data
+    
+
 
 # TODO  НАПИСАТЬ В БД КЛАССЕ МЕТОДЫ КРУД И СЕРИАЛИЗАТОРЫ А В КЛАССАХ ИХ ИМПОРТИРОВАТЬ И ВЫЗЫВАТЬ!
-
-
-class ValidateSQLLevelManager:
-    """
-    Проверяет валидацию на уровне БД — уникальность имени памятника.
-    """
-
-    def __init__(self, db_manager, monument_data: dict, ):
-        self.db_manager = db_manager
-        self.db = db_manager.db  # доступ к QSqlDatabase
-        self.monument_data = monument_data
-
-    def validate_create_method(self) -> (bool, str):
-        checks = [
-            # self._check_name_not_empty,
-            self._check_name_unique_create_method,
-            # self._check_description,
-            # self._check_research_object,
-        ]
-        for check in checks:
-            ok, msg = check()
-            if not ok:
-                return False, msg
-        return True, ""
-
-    def validate_read_method(self) -> (bool, str):
-        checks = [
-            self._check_exist_monument_id
-        ]
-        for check in checks:
-            ok, msg = check()
-            if not ok:
-                return False, msg
-        return True, ""
-
-    def validate_update_method(self) -> (bool, str):
-        checks = [
-            # self._check_name_not_empty,
-            self._check_name_unique_update_method,
-            # self._check_description,
-            # self._check_research_object,
-        ]
-        for check in checks:
-            ok, msg = check()
-            if not ok:
-                return False, msg
-        return True, ""
-
-    def _check_name_not_empty(self):
-        pass
-
-    def _check_name_unique_create_method(self):
-        name = self.monument_data.get('name', '').strip()
-        query = QSqlQuery(self.db)
-        query.prepare("SELECT COUNT(*) FROM Monuments WHERE name = ?")
-        query.addBindValue(name)
-        if not query.exec():
-            return False, f"Ошибка при выполнении SQL-запроса: {query.lastError().text()}"
-        if query.next() and query.value(0) > 0:
-            return False, f"Памятник с именем '{name}' уже существует"
-        return True, ""
-
-    def _check_description(self):
-        pass
-
-    def _check_research_object(self):
-        pass
-
-    def _check_name_unique_update_method(self):
-        name = self.monument_data.get('name', '').strip()
-        current_id = self.monument_data.get(
-            'monument_id')  # Получаем ID текущей записи
-
-        query = QSqlQuery(self.db)
-        query.prepare("""
-            SELECT COUNT(*) 
-            FROM Monuments 
-            WHERE name = ? AND monument_id != ?
-        """)
-        query.addBindValue(name)
-        query.addBindValue(current_id)  # Исключаем текущую запись из проверки
-
-        if not query.exec():
-            return False, f"Ошибка при выполнении SQL-запроса: {query.lastError().text()}"
-
-        if query.next() and query.value(0) > 0:
-            return False, f"Памятник с именем '{name}' уже существует"
-
-        return True, ""
-
-    def _check_exist_monument_id(self) -> bool:
-        """
-        Проверяет, существует ли памятник с monument_id из self.monument_data в базе.
-
-        Возвращает:
-            True, если запись с таким monument_id существует,
-            False, если нет или monument_id не задан.
-        """
-        monument_id = self.monument_data
-        query = QSqlQuery(self.db_manager.db)
-        query.prepare("SELECT COUNT(*) FROM Monuments WHERE monument_id = ?")
-        query.addBindValue(monument_id)
-        if query.exec() and query.next():
-            count = query.value(0)
-            if count > 0:
-                return True, ""
-            else:
-                return False, f"Памятник с ID {monument_id} не найден."
-        return False, "Ошибка при проверке существования памятника."
 
 
 # print('asds')

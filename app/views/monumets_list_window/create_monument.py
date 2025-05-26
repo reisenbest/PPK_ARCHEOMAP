@@ -22,7 +22,7 @@ class CreateMonumentView(QDialog, BaseView):
         name_placeholder = f'имя столбца: {table_info['name']['name']}, тип: {table_info['name']['type']}'
         description_placeholder = table_info['description']['name']
         research_object_placeholder = table_info['research_object']['name']
-
+        print(table_info)
         self.nameInsert.setPlaceholderText(name_placeholder)
         self.descriptionInsert.setPlaceholderText(description_placeholder)
         self.resObjInsert.setPlaceholderText(json.dumps(table_info['research_object']))
@@ -66,7 +66,10 @@ class CreateMonumentController(QObject):
         data_to_insert = {
             'name': self.view.nameInsert.text(),
             'description': self.view.descriptionInsert.toPlainText(),
-            'research_object': self.view.resObjInsert.text()
+            'research_object': self.view.resObjInsert.text(),
+            'latitude': self.view.latitudeInsert.value(),
+            'longitude': self.view.longitudeInsert.value(),
+            'note': self.view.coordNoteInsert.toPlainText(),
         }
 
         # --- ВАЛИДАЦИЯ ---
