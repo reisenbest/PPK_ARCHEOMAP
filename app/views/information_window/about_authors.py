@@ -14,7 +14,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '.
 class AboutAuthorsView(QDialog, BaseView):
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.load_ui('about_authors_windowc.ui')
+        self.load_ui('about_authors_window.ui')
 
 
 class AboutAuthorsController(QObject):

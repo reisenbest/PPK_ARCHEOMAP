@@ -1,6 +1,8 @@
 from typing import List, Dict, Union
 from PyQt5.QtSql import QSqlQuery
 
+
+#вся валидация на урвоне скл хранится здесь
 class ValidateSQLLevelManager:
     """
     Проверяет валидацию на уровне БД — уникальность имени памятника.

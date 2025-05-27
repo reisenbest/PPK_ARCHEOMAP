@@ -1,5 +1,7 @@
 
 
+from database.db_queries import DataBaseQueries
+from database.db_validate import ValidateSQLLevelManager
 import config
 import sys
 import os
@@ -10,8 +12,6 @@ from typing import List, Dict, Union
 
 # TODO сделать одну точку входа базы данных при входе в приложение открывается коннект и им все пользуются
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from database.db_validate import ValidateSQLLevelManager
-from database.db_queries import DataBaseQueries
 
 
 class DataBaseManager:
@@ -34,7 +34,8 @@ class DataBaseManager:
         self.db_queries = DataBaseQueries()
 
         if not self.db.open():
-            raise Exception(f"Не удалось открыть базу данных: {self.db.lastError().text()}")
+            raise Exception(
+                f"Не удалось открыть базу данных: {self.db.lastError().text()}")
 
         QSqlQuery("PRAGMA foreign_keys = ON", self.db)
 
@@ -42,7 +43,7 @@ class DataBaseManager:
         """Закрыть соединение с базой данных."""
         if self.db.isOpen():
             self.db.close()
-            QSqlDatabase.removeDatabase("qt_sql_default_connection")  # если singleton
+            # QSqlDatabase.removeDatabase("qt_sql_default_connection")  # если singleton
 
     def get_monuments(self):
         """Получить список памятников (ID и имя).
@@ -137,21 +138,24 @@ class DataBaseManager:
         coord_data = {k: v for k, v in data.items() if k in coordinates_fields}
 
         # Валидация данных
-        validator = ValidateSQLLevelManager(db_manager=self, monument_data=data)
+        validator = ValidateSQLLevelManager(
+            db_manager=self, monument_data=data)
         is_valid, error_msg = validator.validate_create_method()
         if not is_valid:
             raise Exception(error_msg)
 
         # === Вставка памятника ===
         query = QSqlQuery(self.db)
-        query.prepare(self.db_queries.create_monument())  # например: "INSERT INTO Monuments (name, description, research_object) VALUES (?, ?, ?)"
+        # например: "INSERT INTO Monuments (name, description, research_object) VALUES (?, ?, ?)"
+        query.prepare(self.db_queries.create_monument())
 
         query.addBindValue(monument_data.get('name'))
         query.addBindValue(monument_data.get('description'))
         query.addBindValue(monument_data.get('research_object'))
 
         if not query.exec():
-            raise Exception(f"Ошибка при добавлении памятника: {query.lastError().text()}")
+            raise Exception(
+                f"Ошибка при добавлении памятника: {query.lastError().text()}")
 
         # Получаем ID только что вставленного памятника
         monument_id = query.lastInsertId()
@@ -166,7 +170,8 @@ class DataBaseManager:
             # Собираем сам SQL-запрос
 
             coord_query = QSqlQuery(self.db)
-            coord_query.prepare(self.db_queries.create_coordinate(fields_clause=fields_clause, placeholders=placeholders))
+            coord_query.prepare(self.db_queries.create_coordinate(
+                fields_clause=fields_clause, placeholders=placeholders))
 
             # Последовательно добавляем значения: сначала из coord_data, потом monument_id
             for value in coord_data.values():
@@ -174,7 +179,8 @@ class DataBaseManager:
             coord_query.addBindValue(monument_id)
 
             if not coord_query.exec():
-                raise Exception(f"Ошибка при добавлении координат: {coord_query.lastError().text()}")
+                raise Exception(
+                    f"Ошибка при добавлении координат: {coord_query.lastError().text()}")
 
         return True
 
@@ -190,39 +196,50 @@ class DataBaseManager:
         monument_fields = {"name", "description", "research_object"}
         coordinates_fields = {"latitude", "longitude", "note"}
 
-        monument_data = {k: v for k, v in monument.items() if k in monument_fields}
-        coord_data = {k: v for k, v in monument.items() if k in coordinates_fields}
+        # формирование словаря только с полями относящимися к монументс
+        monument_data = {k: v for k,
+                         v in monument.items() if k in monument_fields}
+        # формирование словаря только с полями относящимися к координатами
+        coord_data = {k: v for k, v in monument.items()
+                      if k in coordinates_fields}
 
         # Валидация (если нужно, можно проверить и по частям)
-        validator = ValidateSQLLevelManager(db_manager=self, monument_data=monument)
+        validator = ValidateSQLLevelManager(
+            db_manager=self, monument_data=monument)
         is_valid, error_msg = validator.validate_update_method()
         if not is_valid:
             raise Exception(error_msg)
 
         # === Обновление Monuments ===
         if monument_data:
+            # Создаёт список строк для SQL-запроса обновления, set_parts = ["name = ?", "description = ?"]
             set_parts = [f"{key} = ?" for key in monument_data.keys()]
+            # Объединяет элементы set_parts через запятую в одну строку. set_clause = "name = ?, description = ?"
             set_clause = ", ".join(set_parts)
             values = list(monument_data.values())
 
             query = QSqlQuery(self.db)
-            query.prepare(self.db_queries.update_monument_by_id(set_clause=set_clause))
+            query.prepare(self.db_queries.update_monument_by_id(
+                set_clause=set_clause))
             for value in values:
                 query.addBindValue(value)
             query.addBindValue(monument_id)
 
             if not query.exec():
-                raise Exception(f"Ошибка при обновлении Monuments: {query.lastError().text()}")
+                raise Exception(
+                    f"Ошибка при обновлении Monuments: {query.lastError().text()}")
 
         # === Обновление Coordinates ===
         if coord_data:
             # Проверим, есть ли вообще координаты у этого monument_id
             check_query = QSqlQuery(self.db)
-            check_query.prepare(self.db_queries.get_coordinate_by_monument_id())
+            check_query.prepare(
+                self.db_queries.get_coordinate_by_monument_id())
             check_query.addBindValue(monument_id)
 
             if not check_query.exec():
-                raise Exception(f"Ошибка при проверке координат: {check_query.lastError().text()}")
+                raise Exception(
+                    f"Ошибка при проверке координат: {check_query.lastError().text()}")
 
             coord_exists = check_query.next()
             coord_id = check_query.value(0) if coord_exists else None
@@ -234,26 +251,32 @@ class DataBaseManager:
             if coord_exists:
                 # Обновление координат
                 query = QSqlQuery(self.db)
-                query.prepare(self.db_queries.update_coordinate_by_monument_id(set_clause=set_clause))
+                query.prepare(self.db_queries.update_coordinate_by_monument_id(
+                    set_clause=set_clause))
                 for value in values:
                     query.addBindValue(value)
                 query.addBindValue(monument_id)
 
                 if not query.exec():
-                    raise Exception(f"Ошибка при обновлении Coordinates: {query.lastError().text()}")
+                    raise Exception(
+                        f"Ошибка при обновлении Coordinates: {query.lastError().text()}")
 
             else:
                 # Вставка новой записи в Coordinates
+                # Формирует перечень названий колонок, в которые будут вставляться данные. fields_clause = "latitude, longitude, monument_id"
                 fields_clause = ", ".join(coord_data.keys()) + ", monument_id"
+                # Формирует строку с плейсхолдерами (?) под значения, передаваемые в SQL-запрос. placeholders = "?, ?, ?" сколько в коорд дата элементов столько и вопросиков
                 placeholders = ", ".join(["?"] * len(coord_data)) + ", ?"
                 query = QSqlQuery(self.db)
-                query.prepare(self.db_queries.create_coordinate_by_monument_id(fields_clause=fields_clause, placeholders=placeholders))
+                query.prepare(self.db_queries.create_coordinate_by_monument_id(
+                    fields_clause=fields_clause, placeholders=placeholders))
                 for value in values:
                     query.addBindValue(value)
                 query.addBindValue(monument_id)
 
                 if not query.exec():
-                    raise Exception(f"Ошибка при добавлении Coordinates: {query.lastError().text()}")
+                    raise Exception(
+                        f"Ошибка при добавлении Coordinates: {query.lastError().text()}")
 
         return True
 
@@ -322,7 +345,6 @@ class DataBaseManager:
 
         # Возвращаем список словарей — по одному на каждую колонку таблицы
         return table_data
-    
 
 
 # TODO  НАПИСАТЬ В БД КЛАССЕ МЕТОДЫ КРУД И СЕРИАЛИЗАТОРЫ А В КЛАССАХ ИХ ИМПОРТИРОВАТЬ И ВЫЗЫВАТЬ!
