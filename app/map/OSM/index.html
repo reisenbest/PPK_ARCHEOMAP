@@ -11,9 +11,10 @@
       href="./leaflet_1_9_4/Leaflet.MousePosition-master/src/L.Control.MousePosition.css"
     />
 
-    <!-- Подключение скриптов -->
+    <!-- Подключение скриптов Leaflet и Qt WebChannel -->
     <script src="./leaflet_1_9_4/leaflet.js"></script>
     <script src="./leaflet_1_9_4/Leaflet.MousePosition-master/src/L.Control.MousePosition.js"></script>
+    <script src="qrc:///qtwebchannel/qwebchannel.js"></script>
 
     <style>
       #map {
@@ -26,45 +27,7 @@
   <body>
     <div id="map"></div>
 
-    <script>
-      // Инициализация карты
-      var map = L.map("map", {
-        minZoom: 14,
-        maxZoom: 18,
-        maxBounds: [
-          [59.946, 30.295],
-          [59.953, 31.32],
-        ],
-      }).setView([59.95, 31.3167], 15);
-
-      // Слой тайлов
-      L.tileLayer("tiles2/{z}/{x}/{y}.png", {
-        minZoom: 10,
-        maxZoom: 20,
-        tileSize: 256,
-        noWrap: true,
-        bounds: [
-          [59.946, 30.295],
-          [59.953, 32.32],
-        ],
-        errorTileUrl: "blank.png",
-      }).addTo(map);
-
-      // Маркер
-      L.marker([59.95, 30.3167])
-        .addTo(map)
-        .bindPopup("Петропавловская крепость")
-        .openPopup();
-
-      // Координаты мыши
-      L.control
-        .mousePosition({
-          position: "bottomleft",
-          separator: " , ",
-          numDigits: 6,
-          prefix: "Координаты:",
-        })
-        .addTo(map);
-    </script>
+    <!-- Подключаем отдельный JS-файл -->
+    <script src="./map.js"></script>
   </body>
 </html>
