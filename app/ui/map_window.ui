@@ -16,8 +16,8 @@
   <widget class="QWebEngineView" name="MapContainer">
    <property name="geometry">
     <rect>
-     <x>0</x>
-     <y>0</y>
+     <x>-10</x>
+     <y>10</y>
      <width>1011</width>
      <height>731</height>
     </rect>
@@ -52,6 +52,19 @@
    </property>
    <property name="text">
     <string>Удалить точку</string>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="RefreshBtn">
+   <property name="geometry">
+    <rect>
+     <x>510</x>
+     <y>770</y>
+     <width>181</width>
+     <height>41</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Refresh</string>
    </property>
   </widget>
  </widget>

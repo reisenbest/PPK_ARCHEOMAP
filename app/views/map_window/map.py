@@ -36,7 +36,10 @@ class MapView(QWidget, BaseView):
         else:
             print(f"[ОШИБКА] HTML-файл карты не найден: {html_path}")
 
+        
 
+    def refresh_map_markers(self):
+        self.web_view.page().runJavaScript("updateMarkersFromQt();")
 
 class MapBridge(QObject):
     def __init__(self, db_manager, parent=None):  # <-- получаем MapBridge извне
@@ -47,10 +50,11 @@ class MapBridge(QObject):
         monuments = self.db_manager.get_monuments()
         data = []
         for monument in monuments:
+            print('look', monument)
             data.append({'lat': monument['latitude'],
                          'lng': monument['longitude'],
                          'label': monument['research_object']})
-            print(monument)
+            
         # print(monuments)
         # Координаты двух бастионов Петропавловской крепости
         return data
@@ -62,9 +66,21 @@ class MapController(QObject):
         self.db_manager = db_manager
         self.bridge = MapBridge(self.db_manager)  # создаём bridge
         self.view = MapView(self.bridge)  # передаём его в MapView
+        self.setup_connections()
 
     def show(self):
         self.view.show()
 
     def setup_connections(self):
-        pass
+        self.view.RefreshBtn.clicked.connect(self.refresh_map_condition)
+
+    @pyqtSlot()
+    def refresh_map_condition(self):
+        """Обновление карты по кнопке"""
+        print("[INFO] Обновляем маркеры на карте...")
+        self.view.refresh_map_markers()
+
+
+        
+
+        

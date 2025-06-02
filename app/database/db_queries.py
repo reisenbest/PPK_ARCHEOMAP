@@ -17,9 +17,13 @@ class DataBaseQueries:
                 m.research_object,
                 c.latitude,
                 c.longitude,
-                c.note
+                c.note,
+                f.file_path,
+                f.file_type,
+                f.file_description
             FROM Monuments m
             LEFT JOIN Coordinates c ON m.monument_id = c.monument_id
+            LEFT JOIN Files f ON m.monument_id = f.monument_id
         """
 
     @staticmethod
@@ -112,5 +116,20 @@ class DataBaseQueries:
                     c.note
                 FROM Monuments m
                 LEFT JOIN Coordinates c ON m.monument_id = c.monument_id
+            """
+    @staticmethod
+    def create_monument_list_view():
+        """Возвращает SQL-запрос для отображения данных из БД в окне monument_list в табличном виде."""
+        return """
+            SELECT 
+                m.monument_id AS "ID",
+                m.name AS "Название",
+                m.description AS "Описание",
+                m.research_object AS "Объект исследования",
+                c.latitude AS "Широта",
+                c.longitude AS "Долгота",
+                c.note AS "Примечание"
+            FROM Monuments m
+            LEFT JOIN Coordinates c ON m.monument_id = c.monument_id
             """
 

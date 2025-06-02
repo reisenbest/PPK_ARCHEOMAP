@@ -9,33 +9,23 @@ from views.monumets_list_window.delete_monument import DeleteMonumentController
 from views.monumets_list_window.update_monument import UpdateMonumentController
 from views.monumets_list_window.create_monument import CreateMonumentController
 from utils.base_classes import BaseView
-
+from database.db_queries import DataBaseQueries
 
 
 class MonumentListView(QWidget, BaseView):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.load_ui("monuments_list_window.ui")
+        self.db_query = DataBaseQueries()
 
         # Используем QSqlQueryModel для JOIN-запроса
         self.model = QSqlQueryModel(self)
-        self.model.setQuery("""
-            SELECT 
-                m.monument_id AS "ID",
-                m.name AS "Название",
-                m.description AS "Описание",
-                m.research_object AS "Объект исследования",
-                c.latitude AS "Широта",
-                c.longitude AS "Долгота",
-                c.note AS "Примечание"
-            FROM Monuments m
-            LEFT JOIN Coordinates c ON m.monument_id = c.monument_id
-        """)
+        self.model.setQuery(self.db_query.create_monument_list_view())
 
         self.monumentsTableView.setModel(self.model)
         self.monumentsTableView.resizeColumnsToContents()
         self.monumentsTableView.setSortingEnabled(True)
-
+        
 class MonumentListController(QObject):
     def __init__(self, db_manager, parent=None):
         super().__init__(parent)

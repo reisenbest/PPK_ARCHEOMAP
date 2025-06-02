@@ -1,17 +1,18 @@
-
-
+import sys
+import os
+# TODO сделать одну точку входа базы данных при входе в приложение открывается коннект и им все пользуются
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from database.db_queries import DataBaseQueries
 from database.db_validate import ValidateSQLLevelManager
 import config
-import sys
-import os
+
+
 
 from PyQt5.QtSql import QSqlDatabase, QSqlQuery
 from PyQt5.QtSql import QSqlError
 from typing import List, Dict, Union
 
-# TODO сделать одну точку входа базы данных при входе в приложение открывается коннект и им все пользуются
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
 
 
 class DataBaseManager:
@@ -46,25 +47,63 @@ class DataBaseManager:
             # QSqlDatabase.removeDatabase("qt_sql_default_connection")  # если singleton
 
     def get_monuments(self):
-        """Получить список памятников (ID и имя).
-        """
-        # создание запроса с на получение полей id & name из таблицы  Monuments
-        # создание пустого списка для их хранения
-        # идем по записям пока они не кончатся и добалвяем в список словарь  1 столбец из полученной строки в id 2 столбец в name
-        # возвращает список памятников где каждый памятник - отдельный словарь
         query = QSqlQuery(self.db_queries.get_monuments(), self.db)
 
-        monuments = []
-        while query.next():
-            record = {}
-            columns_count = query.record().count()
-            for i in range(columns_count):
-                column_name = query.record().fieldName(i)
-                column_value = query.value(i)
-                record[column_name] = column_value
-            monuments.append(record)
+        monuments = {}
 
-        return monuments
+        while query.next():
+            monument_id = query.value("monument_id")
+
+            if monument_id not in monuments:
+                # Инициализируем памятник с координатами сразу
+                latitude = query.value("latitude")
+                longitude = query.value("longitude")
+                note = query.value("note")
+
+                monuments[monument_id] = {
+                    "monument_id": monument_id,
+                    "name": query.value("name"),
+                    "description": query.value("description"),
+                    "research_object": query.value("research_object"),
+                    "latitude": latitude,
+                    "longitude": longitude,
+                    "note": note,
+                    "files": []
+                }
+
+            # Добавляем файл, если он есть
+            file_path = query.value("file_path")
+            if file_path:
+                file_entry = {
+                    "file_path": file_path,
+                    "file_type": query.value("file_type"),
+                    "file_description": query.value("file_description")
+                }
+                if file_entry not in monuments[monument_id]["files"]:
+                    monuments[monument_id]["files"].append(file_entry)
+
+        return list(monuments.values())
+
+    # def get_monuments(self):
+    #     """Получить список памятников (ID и имя).
+    #     """
+    #     # создание запроса с на получение полей id & name из таблицы  Monuments
+    #     # создание пустого списка для их хранения
+    #     # идем по записям пока они не кончатся и добалвяем в список словарь  1 столбец из полученной строки в id 2 столбец в name
+    #     # возвращает список памятников где каждый памятник - отдельный словарь
+    #     query = QSqlQuery(self.db_queries.get_monuments(), self.db)
+
+    #     monuments = []
+    #     while query.next():
+    #         record = {}
+    #         columns_count = query.record().count()
+    #         for i in range(columns_count):
+    #             column_name = query.record().fieldName(i)
+    #             column_value = query.value(i)
+    #             record[column_name] = column_value
+    #         monuments.append(record)
+
+    #     return monuments
 
     def get_monument_by_id(self, monument_id: int):
         validator = ValidateSQLLevelManager(
@@ -346,6 +385,10 @@ class DataBaseManager:
         # Возвращаем список словарей — по одному на каждую колонку таблицы
         return table_data
 
+
+x = DataBaseManager()
+
+print(x.get_monuments())
 
 # TODO  НАПИСАТЬ В БД КЛАССЕ МЕТОДЫ КРУД И СЕРИАЛИЗАТОРЫ А В КЛАССАХ ИХ ИМПОРТИРОВАТЬ И ВЫЗЫВАТЬ!
 

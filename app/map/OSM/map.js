@@ -1,6 +1,4 @@
-// map_script.js
-
-// Инициализация карты
+// === Инициализация карты ===
 var map = L.map("map", {
   minZoom: 14,
   maxZoom: 18,
@@ -10,7 +8,7 @@ var map = L.map("map", {
   ],
 }).setView([59.95, 31.3167], 15);
 
-// Слой тайлов
+// === Слой тайлов ===
 L.tileLayer("tiles2/{z}/{x}/{y}.png", {
   minZoom: 10,
   maxZoom: 20,
@@ -23,13 +21,13 @@ L.tileLayer("tiles2/{z}/{x}/{y}.png", {
   errorTileUrl: "blank.png",
 }).addTo(map);
 
-// Маркер
+// === Статичный маркер Петропавловской крепости ===
 L.marker([59.95, 30.3167])
   .addTo(map)
   .bindPopup("Петропавловская крепость")
   .openPopup();
 
-// Координаты мыши
+// === Координаты мыши ===
 L.control
   .mousePosition({
     position: "bottomleft",
@@ -39,15 +37,31 @@ L.control
   })
   .addTo(map);
 
-// Работа с Qt WebChannel
-new QWebChannel(qt.webChannelTransport, function (channel) {
-  const bridge = channel.objects.bridge;
+// === Работа с Qt WebChannel и маркерами ===
+let monumentMarkers = [];  // массив для хранения маркеров
+
+function updateMarkers() {
+  // Удаляем старые маркеры
+  monumentMarkers.forEach(marker => map.removeLayer(marker));
+  monumentMarkers = [];
 
   bridge.get_monuments_markers(function (markers) {
     markers.forEach(m => {
-      L.marker([m.lat, m.lng])
+      const marker = L.marker([m.lat, m.lng])
         .addTo(map)
         .bindPopup(m.label);
+      monumentMarkers.push(marker);
     });
   });
+}
+
+// === Установка канала WebChannel ===
+new QWebChannel(qt.webChannelTransport, function (channel) {
+  window.bridge = channel.objects.bridge;
+
+  // При первом запуске — загрузка маркеров
+  updateMarkers();
+
+  // Делаем функцию глобальной, чтобы вызывать из Python
+  window.updateMarkersFromQt = updateMarkers;
 });
