@@ -106,120 +106,131 @@ class DataBaseManager:
     #     return monuments
 
     def get_monument_by_id(self, monument_id: int):
-        validator = ValidateSQLLevelManager(
-            db_manager=self, monument_data=monument_id)
+        # --- ВАЛИДАЦИЯ ---
+        validator = ValidateSQLLevelManager(db_manager=self, monument_data=monument_id)
         is_valid, error_msg = validator.validate_read_method()
         if not is_valid:
-            # Возвращаем или выбрасываем ошибку, чтобы контроллер мог её обработать
             raise Exception(error_msg)
-        """Получить один памятник по ID."""
 
-        # Создаём объект запроса QSqlQuery, связанный с текущим подключением к базе данных
+        # --- Получение памятника и координат ---
         query = QSqlQuery(self.db)
-
-        # Подготавливаем SQL-запрос с параметром-заполнителем '?'
-        # Запрос выбирает все столбцы (*) из таблицы Monuments, где поле monument_id равно переданному параметру
         query.prepare(self.db_queries.get_monument_by_id())
-
-        # Привязываем конкретное значение monument_id к параметру '?' в SQL-запросе
         query.addBindValue(monument_id)
 
-        # Выполняем запрос и проверяем, что он выполнен успешно и что получена хотя бы одна запись
         if query.exec() and query.next():
-
-            # Если запись есть, создаём пустой словарь для хранения данных из результата
             record = {}
-
-            # Получаем количество столбцов в записи (результате запроса)
             columns_count = query.record().count()
-
-            # Перебираем все столбцы в записи по индексам от 0 до количества столбцов - 1
             for i in range(columns_count):
-
-                # Получаем имя текущего столбца по индексу i
                 column_name = query.record().fieldName(i)
-
-                # Получаем значение поля из результата запроса по индексу i
                 column_value = query.value(i)
-
-                # Записываем пару ключ-значение в словарь: имя столбца — значение этого столбца
                 record[column_name] = column_value
 
-            # Возвращаем словарь с данными памятника (все поля из таблицы)
+            # --- Получение файлов ---
+            files_query = QSqlQuery(self.db)
+            files_query.prepare(self.db_queries.get_files_by_monument_id())
+            files_query.addBindValue(monument_id)
+
+            files = []
+            if files_query.exec():
+                while files_query.next():
+                    files.append({
+                        "file_id": files_query.value("file_id"),
+                        "file_path": files_query.value("file_path"),
+                        "file_type": files_query.value("file_type"),
+                        "file_description": files_query.value("file_description"),
+                        "monument_id": files_query.value("monument_id")
+                    })
+
+            record["files"] = files
+            print('recorc', record)
             return record
 
-        # Если запрос не выполнился или запись с таким monument_id не найдена — возвращаем None
         return None
 
     def create_monument(self, data: dict):
         """
-        Создаёт памятник и, при наличии, добавляет координаты.
+        Создаёт памятник и, при наличии, добавляет координаты и связанные файлы.
 
-        :param data: словарь с полями для таблиц Monuments и Coordinates.
-                    Пример:
-                    {
-                        "name": "Башня",
-                        "description": "Остатки оборонительной башни",
-                        "research_object": "Фундамент",
-                        "latitude": 59.95,
-                        "longitude": 30.30,
-                        "note": "Северо-запад"
-                    }
+        Ожидаемый формат данных:
+        {
+            "name": str,
+            "description": str,
+            "research_object": str,
+            "latitude": float,
+            "longitude": float,
+            "note": str,
+            "files": [
+                {
+                    "file_path": str,
+                    "file_type": str,
+                    "file_description": str
+                },
+                ...
+            ]
+        }
         """
         if not data:
             raise Exception("Нет данных для создания памятника")
 
-        # Разделяем входные данные на 2 группы: для Monuments и для Coordinates
+        # --- Разделение данных ---
         monument_fields = {"name", "description", "research_object"}
         coordinates_fields = {"latitude", "longitude", "note"}
 
         monument_data = {k: v for k, v in data.items() if k in monument_fields}
         coord_data = {k: v for k, v in data.items() if k in coordinates_fields}
+        files_data = data.get("files", [])
 
-        # Валидация данных
-        validator = ValidateSQLLevelManager(
-            db_manager=self, monument_data=data)
+        # --- Валидация ---
+        validator = ValidateSQLLevelManager(db_manager=self, monument_data=data)
         is_valid, error_msg = validator.validate_create_method()
         if not is_valid:
             raise Exception(error_msg)
 
-        # === Вставка памятника ===
+        # --- Вставка памятника ---
         query = QSqlQuery(self.db)
-        # например: "INSERT INTO Monuments (name, description, research_object) VALUES (?, ?, ?)"
         query.prepare(self.db_queries.create_monument())
-
         query.addBindValue(monument_data.get('name'))
         query.addBindValue(monument_data.get('description'))
         query.addBindValue(monument_data.get('research_object'))
 
         if not query.exec():
-            raise Exception(
-                f"Ошибка при добавлении памятника: {query.lastError().text()}")
+            raise Exception(f"Ошибка при добавлении памятника: {query.lastError().text()}")
 
-        # Получаем ID только что вставленного памятника
         monument_id = query.lastInsertId()
 
-        # === Вставка координат, если они указаны ===
+        # --- Вставка координат ---
         if coord_data:
-            # Собираем список имён колонок: ключи из coord_data + monument_id
             fields_clause = ", ".join(coord_data.keys()) + ", monument_id"
-            # Генерируем такое же количество "?" — плейсхолдеров
             placeholders = ", ".join(["?"] * len(coord_data)) + ", ?"
 
-            # Собираем сам SQL-запрос
-
             coord_query = QSqlQuery(self.db)
-            coord_query.prepare(self.db_queries.create_coordinate(
-                fields_clause=fields_clause, placeholders=placeholders))
+            coord_query.prepare(self.db_queries.create_coordinate(fields_clause, placeholders))
 
-            # Последовательно добавляем значения: сначала из coord_data, потом monument_id
             for value in coord_data.values():
                 coord_query.addBindValue(value)
             coord_query.addBindValue(monument_id)
 
             if not coord_query.exec():
-                raise Exception(
-                    f"Ошибка при добавлении координат: {coord_query.lastError().text()}")
+                raise Exception(f"Ошибка при добавлении координат: {coord_query.lastError().text()}")
+
+        # --- Вставка файлов ---
+        for file in files_data:
+            file_path = file.get("file_path")
+            file_type = file.get("file_type", None)
+            file_description = file.get("file_description", None)
+
+            if not file_path:
+                continue  # обязательное поле
+
+            file_query = QSqlQuery(self.db)
+            file_query.prepare(self.db_queries.create_file())
+            file_query.addBindValue(file_path)
+            file_query.addBindValue(file_type)
+            file_query.addBindValue(file_description)
+            file_query.addBindValue(monument_id)
+
+            if not file_query.exec():
+                raise Exception(f"Ошибка при добавлении файла: {file_query.lastError().text()}")
 
         return True
 

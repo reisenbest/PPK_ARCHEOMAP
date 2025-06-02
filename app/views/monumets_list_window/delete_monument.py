@@ -1,5 +1,7 @@
 import os
 import sys
+import shutil
+import re
 import config
 from PyQt5.QtWidgets import QDialog, QMessageBox
 from PyQt5.QtCore import pyqtSlot, QObject
@@ -29,19 +31,33 @@ class DeleteMonumentController(QObject):
         self.view.show()
 
     def delete_monument(self):
-        """Удаление памятника из базы данных по ID."""
+        """Удаление памятника из базы данных и удаление его папки."""
         monument_id = self.monument_details['monument_id']
+        monument_name = self.monument_details['name']  # имя, как в БД
+
         try:
             success = self.db_manager.delete_monument_by_id(monument_id)
             if success:
-                self.view.accept()  # Удаление успешно — закрыть окно и вернуть Accepted
+                # --- Удаление папки ---
+                try:
+                    monument_path = os.path.join(config.DATA_STORAGE_DIR, monument_name)
+
+                    if os.path.exists(monument_path):
+                        shutil.rmtree(monument_path)
+                        print(f"Папка памятника удалена: {monument_path}")
+                except Exception as folder_err:
+                    QMessageBox.warning(
+                        self.view,
+                        "Предупреждение",
+                        f"Памятник удалён из базы данных,\n"
+                        f"но произошла ошибка при удалении папки:\n{folder_err}"
+                    )
+
+                self.view.accept()  # Удаление прошло успешно
             else:
-                QMessageBox.warning(self.view, "Ошибка",
-                                    "Не удалось удалить памятник.")
+                QMessageBox.warning(self.view, "Ошибка", "Не удалось удалить памятник.")
         except Exception as e:
-            QMessageBox.critical(self.view, "Ошибка",
-                                 f"Произошла ошибка при удалении:\n{e}")
-            # Окно не закрывается, пользователь может попробовать снова
+            QMessageBox.critical(self.view, "Ошибка", f"Произошла ошибка при удалении:\n{e}")
 
     @pyqtSlot()
     def cancel_delete(self):

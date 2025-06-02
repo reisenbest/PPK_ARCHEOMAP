@@ -1,6 +1,7 @@
 
 import os
 import sys
+import re
 import config
 from PyQt5.QtWidgets import QDialog, QMessageBox
 from PyQt5.QtCore import pyqtSlot, QObject
@@ -55,33 +56,58 @@ class UpdateMonumentController(QObject):
     
     @pyqtSlot()
     def update_monument(self):
-        
-        monument = self.monument_details
-        monument['name'] = self.view.nameEdit.text()
+        monument = self.monument_details.copy()  # копия, чтобы не портить оригинал
+
+        old_name = self.monument_details['name']  # старое имя (до редактирования)
+        new_name = self.view.nameEdit.text()      # новое имя (после редактирования)
+
+        # Обновляем поля памятника
+        monument['name'] = new_name
         monument['description'] = self.view.descriptionEdit.toPlainText()
         monument['research_object'] = self.view.resObjEdit.text()
         monument['latitude'] = self.view.latitudeEdit.value()
         monument['longitude'] = self.view.longitudeEdit.value()
         monument['note'] = self.view.coordNoteEdit.toPlainText()
-        
 
+        # --- Валидация ---
         is_valid, error_msg = self.validator.validate_create_method(monument)
         if not is_valid:
             QMessageBox.warning(self.view, "Ошибка валидации на уровне UI", error_msg)
             return
-        
 
         try:
-            success = self.db_manager.update_monument_by_id(monument_id=monument['monument_id'],
-                                              monument=monument)
+            success = self.db_manager.update_monument_by_id(
+                monument_id=monument['monument_id'],
+                monument=monument
+            )
+
             if success:
-                self.view.accept()  # обновление успешно — закрыть окно и вернуть Accepted
+                # --- Переименование папки, если имя изменилось ---
+                old_safe_name = re.sub(r'[^\w\-_ ]', '_', old_name.strip())
+                new_safe_name = re.sub(r'[^\w\-_ ]', '_', new_name.strip())
+
+                if old_safe_name != new_safe_name:
+                    old_path = os.path.join(config.DATA_STORAGE_DIR, old_safe_name)
+                    new_path = os.path.join(config.DATA_STORAGE_DIR, new_safe_name)
+
+                    try:
+                        if os.path.exists(old_path):
+                            os.rename(old_path, new_path)
+                            print(f"Папка переименована: {old_path} → {new_path}")
+                        elif not os.path.exists(new_path):
+                            # Если старая папка отсутствует, а новая ещё не существует — создаём
+                            os.makedirs(new_path)
+                            print(f"Создана новая папка памятника: {new_path}")
+                    except Exception as folder_err:
+                        QMessageBox.warning(self.view, "Ошибка переименования папки", str(folder_err))
+
+                self.view.accept()
             else:
-                QMessageBox.warning(self.view, "Ошибка валидации на уровне sql", "Не удалось обновить памятник.")
+                QMessageBox.warning(self.view, "Ошибка", "Не удалось обновить памятник.")
 
         except Exception as e:
-             QMessageBox.critical(self.view, "Ошибка валидации на уровне sql", f"Произошла ошибка при обновлении:\n{e}")
-        
+            QMessageBox.critical(self.view, "Ошибка", f"Произошла ошибка при обновлении:\n{e}")
+            
 
 
     

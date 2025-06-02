@@ -27,20 +27,42 @@ class ReadMonumentView(QDialog, BaseView):
         print('Детали памятника:', data)
 
         content = f"""
-            <h2>{data['monument_id']}</h2>
-            <h2>Описание</h2>
-            <p>{data['name']}</o>
+            <h2>ID памятника</h2>
+            <p>{data['monument_id']}</p>
+
+            <h2>Название</h2>
+            <p>{data['name']}</p>
+
             <h2>Описание</h2>
             <p>{data['description']}</p>
-            <h2>Объект</h2>
+
+            <h2>Объект исследования</h2>
             <p>{data['research_object']}</p>
+
             <h2>Широта</h2>
             <p>{data['latitude']}</p>
+
             <h2>Долгота</h2>
             <p>{data['longitude']}</p>
+
             <h2>Записка о координатах</h2>
             <p>{data['note']}</p>
         """
+
+        files = data.get("files", [])
+        if files:
+            content += "<h2>Файлы</h2><ul>"
+            for file in files:
+                content += f"""
+                    <li>
+                        <b>{file['file_type']}</b>: {file['file_description']}<br>
+                        <i>{file['file_path']}</i>
+                    </li>
+                """
+            content += "</ul>"
+        else:
+            content += "<h2>Файлы</h2><p>Нет прикреплённых файлов.</p>"
+
         self.MonumentContainer.setHtml(content)
 
 class ReadMonumentController(QObject):

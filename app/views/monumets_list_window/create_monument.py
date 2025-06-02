@@ -1,6 +1,7 @@
 
 import os
 import sys
+import re  # для очистки имени
 import config
 from PyQt5.QtWidgets import QDialog, QMessageBox
 from PyQt5.QtCore import pyqtSlot, QObject
@@ -9,8 +10,6 @@ import json
 from utils.base_classes import BaseView
 from utils.validate_manager import ValidateUILevelManager   
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..')))
-
-
 
 
 class CreateMonumentView(QDialog, BaseView):
@@ -22,12 +21,17 @@ class CreateMonumentView(QDialog, BaseView):
         name_placeholder = f'имя столбца: {table_info['name']['name']}, тип: {table_info['name']['type']}'
         description_placeholder = table_info['description']['name']
         research_object_placeholder = table_info['research_object']['name']
-        print(table_info)
+
+        print('table info', table_info)
+        
         self.nameInsert.setPlaceholderText(name_placeholder)
         self.descriptionInsert.setPlaceholderText(description_placeholder)
         self.resObjInsert.setPlaceholderText(json.dumps(table_info['research_object']))
+        self.filePathInsert.setPlaceholderText('file_path_placeholder')
+    
 
 class CreateMonumentController(QObject):
+
     def __init__(self, db_manager, parent=None):
         super().__init__(parent)
         self.view = CreateMonumentView()
@@ -63,14 +67,29 @@ class CreateMonumentController(QObject):
     
     @pyqtSlot()
     def create_monument(self):
+        # Получаем и очищаем имя памятника
+        raw_name = self.view.nameInsert.text().strip()
+        safe_name = re.sub(r'[^\w\-_ ]', '_', raw_name)
+
+        # Получаем путь к файлу (строка)
+        raw_file_path = self.view.filePathInsert.text().strip()
+
         data_to_insert = {
-            'name': self.view.nameInsert.text(),
+            'name': safe_name,
             'description': self.view.descriptionInsert.toPlainText(),
             'research_object': self.view.resObjInsert.text(),
             'latitude': self.view.latitudeInsert.value(),
             'longitude': self.view.longitudeInsert.value(),
             'note': self.view.coordNoteInsert.toPlainText(),
         }
+
+        # Если поле пути к файлу заполнено — оборачиваем в список
+        if raw_file_path:
+            data_to_insert['files'] = [{
+                'file_path': raw_file_path,
+                'file_type': None,
+                'file_description': None
+            }]
 
         # --- ВАЛИДАЦИЯ ---
         is_valid, error_msg = self.validator.validate_create_method(data_to_insert)
@@ -82,11 +101,18 @@ class CreateMonumentController(QObject):
         try:
             success = self.db_manager.create_monument(data=data_to_insert)
             if success:
+                # --- СОЗДАНИЕ ПАПКИ ДЛЯ ПАМЯТНИКА ---
+                try:
+                    monument_path = os.path.join(config.DATA_STORAGE_DIR, safe_name)
+                    os.makedirs(monument_path, exist_ok=True)
+                    print(f"Создана папка памятника: {monument_path}")
+                except Exception as folder_err:
+                    QMessageBox.warning(self.view, "Ошибка при создании папки", str(folder_err))
+                    return
+
                 self.view.accept()
         except Exception as e:
-            QMessageBox.warning(self.view, "Ошибка валидации на уровне SQL", str(e))
-        
-            # raise
+            QMessageBox.warning(self.view, "Ошибка при создании памятника", str(e))
 
         
 

@@ -13,7 +13,7 @@ MEDIA_DIR = os.path.join(BASE_APP_DIR, "media")
 DATABASE_DIR = os.path.join(BASE_APP_DIR, "database")
 UTILS_DIR = os.path.join(BASE_APP_DIR, "utils")
 VIEWS_DIR = os.path.join(BASE_APP_DIR, "views")
-
+DATA_STORAGE_DIR = os.path.join(BASE_APP_DIR, "data_storage")
 
 
 

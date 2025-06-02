@@ -253,6 +253,32 @@ font-size: 11px;</string>
     <string>COORDINATE NOTE</string>
    </property>
   </widget>
+  <widget class="QLineEdit" name="filePathInsert">
+   <property name="geometry">
+    <rect>
+     <x>570</x>
+     <y>80</y>
+     <width>411</width>
+     <height>41</height>
+    </rect>
+   </property>
+   <property name="placeholderText">
+    <string/>
+   </property>
+  </widget>
+  <widget class="QLabel" name="file_path_label">
+   <property name="geometry">
+    <rect>
+     <x>570</x>
+     <y>50</y>
+     <width>301</width>
+     <height>16</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>FILE PATH</string>
+   </property>
+  </widget>
  </widget>
  <resources/>
  <connections/>

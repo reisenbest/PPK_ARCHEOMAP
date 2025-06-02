@@ -41,6 +41,20 @@ class DataBaseQueries:
             LEFT JOIN Coordinates c ON m.monument_id = c.monument_id
             WHERE m.monument_id = ?
         """
+    
+    @staticmethod
+    def get_files_by_monument_id():
+        return """
+            SELECT 
+                file_id,
+                file_path,
+                file_type,
+                file_description,
+                monument_id
+            FROM Files
+            WHERE monument_id = ?
+            """
+
 
     @staticmethod
     def create_monument():
@@ -54,6 +68,13 @@ class DataBaseQueries:
         return f"""
             INSERT INTO Coordinates ({fields_clause})
             VALUES ({placeholders})
+        """
+    
+    @staticmethod
+    def create_file():
+        return """
+            INSERT INTO Files (file_path, file_type, file_description, monument_id)
+            VALUES (?, ?, ?, ?)
         """
 
     @staticmethod
