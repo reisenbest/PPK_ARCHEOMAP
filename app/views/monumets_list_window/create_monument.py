@@ -3,9 +3,11 @@ import os
 import sys
 import re  # для очистки имени
 import config
+import shutil
 from PyQt5.QtWidgets import QDialog, QMessageBox
 from PyQt5.QtCore import pyqtSlot, QObject
 from PyQt5.uic import loadUi
+from PyQt5.QtWidgets import QFileDialog
 import json
 from utils.base_classes import BaseView
 from utils.validate_manager import ValidateUILevelManager   
@@ -48,7 +50,7 @@ class CreateMonumentController(QObject):
         # Подключаем действия к кнопкам
         self.view.createBtn.clicked.connect(self.create_monument)
         self.view.cancelBtn.clicked.connect(self.cancel_create)  # Обработчик кнопки "Отмена
-
+        self.view.browseBtn.clicked.connect(self.browse_file) # загрузить файл
     @pyqtSlot()
     def set_placeholders(self):
         table_info = self.db_manager.get_info_about_table('Monuments')
@@ -64,16 +66,50 @@ class CreateMonumentController(QObject):
     def cancel_create(self):
         """Отмена изменение. Просто закрыть окно."""
         self.view.reject()  # Закрытие окна без изменение
+
+    @pyqtSlot()
+    def browse_file(self):
+        file_path, _ = QFileDialog.getOpenFileName(self.view, "Выберите файл", "", "Все файлы (*.*)")
+        if file_path:
+            self.view.filePathInsert.setText(file_path)
     
     @pyqtSlot()
     def create_monument(self):
-        # Получаем и очищаем имя памятника
         raw_name = self.view.nameInsert.text().strip()
         safe_name = re.sub(r'[^\w\-_ ]', '_', raw_name)
 
-        # Получаем путь к файлу (строка)
         raw_file_path = self.view.filePathInsert.text().strip()
 
+        # Сначала создать папку
+        monument_path = os.path.join(config.DATA_STORAGE_DIR, safe_name)
+        try:
+            os.makedirs(monument_path, exist_ok=True)
+        except Exception as folder_err:
+            QMessageBox.warning(self.view, "Ошибка при создании папки", str(folder_err))
+            return
+
+        # Скопировать файл
+        files_data = []
+        if raw_file_path and os.path.exists(raw_file_path):
+            try:
+                filename = os.path.basename(raw_file_path)
+                target_path = os.path.join(monument_path, filename)
+                shutil.copy(raw_file_path, target_path)
+                print(f"Файл скопирован: {target_path}")
+                print(config.BASE_APP_DIR)
+
+                relative_path = os.path.relpath(target_path, config.BASE_APP_DIR)
+
+                files_data.append({
+                    'file_path': relative_path,
+                    'file_type': None,
+                    'file_description': None
+                })
+            except Exception as copy_err:
+                QMessageBox.warning(self.view, "Ошибка при копировании файла", str(copy_err))
+                return
+
+        # Собрать финальный словарь для вставки
         data_to_insert = {
             'name': safe_name,
             'description': self.view.descriptionInsert.toPlainText(),
@@ -83,13 +119,8 @@ class CreateMonumentController(QObject):
             'note': self.view.coordNoteInsert.toPlainText(),
         }
 
-        # Если поле пути к файлу заполнено — оборачиваем в список
-        if raw_file_path:
-            data_to_insert['files'] = [{
-                'file_path': raw_file_path,
-                'file_type': None,
-                'file_description': None
-            }]
+        if files_data:
+            data_to_insert['files'] = files_data
 
         # --- ВАЛИДАЦИЯ ---
         is_valid, error_msg = self.validator.validate_create_method(data_to_insert)
@@ -101,20 +132,10 @@ class CreateMonumentController(QObject):
         try:
             success = self.db_manager.create_monument(data=data_to_insert)
             if success:
-                # --- СОЗДАНИЕ ПАПКИ ДЛЯ ПАМЯТНИКА ---
-                try:
-                    monument_path = os.path.join(config.DATA_STORAGE_DIR, safe_name)
-                    os.makedirs(monument_path, exist_ok=True)
-                    print(f"Создана папка памятника: {monument_path}")
-                except Exception as folder_err:
-                    QMessageBox.warning(self.view, "Ошибка при создании папки", str(folder_err))
-                    return
-
                 self.view.accept()
         except Exception as e:
             QMessageBox.warning(self.view, "Ошибка при создании памятника", str(e))
-
-        
+            
 
 
 

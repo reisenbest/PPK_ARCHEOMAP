@@ -15,6 +15,7 @@ class AboutAuthorsView(QDialog, BaseView):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.load_ui('about_authors_windowc.ui')
+        
 
 
 
@@ -50,6 +51,7 @@ class ReadMonumentView(QDialog, BaseView):
         """
 
         files = data.get("files", [])
+        print('files', files)
         if files:
             content += "<h2>Файлы</h2><ul>"
             for file in files:

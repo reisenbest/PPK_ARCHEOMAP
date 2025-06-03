@@ -279,6 +279,19 @@ font-size: 11px;</string>
     <string>FILE PATH</string>
    </property>
   </widget>
+  <widget class="QPushButton" name="browseBtn">
+   <property name="geometry">
+    <rect>
+     <x>570</x>
+     <y>140</y>
+     <width>151</width>
+     <height>31</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>browse...</string>
+   </property>
+  </widget>
  </widget>
  <resources/>
  <connections/>
