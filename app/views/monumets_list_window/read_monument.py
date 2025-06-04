@@ -6,16 +6,11 @@ from PyQt5.QtWidgets import QDialog
 from PyQt5.QtCore import pyqtSlot, QObject
 from PyQt5.uic import loadUi
 from utils.base_classes import BaseView
-
+from PyQt5.QtGui import QDesktopServices
+from PyQt5.QtCore import QUrl
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..')))
 
-
-class AboutAuthorsView(QDialog, BaseView):
-    def __init__(self, parent=None):
-        super().__init__(parent)
-        self.load_ui('about_authors_windowc.ui')
-        
 
 
 
@@ -23,6 +18,7 @@ class ReadMonumentView(QDialog, BaseView):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.load_ui('read_monument_window.ui')
+        self.MonumentContainer.anchorClicked.connect(self.open_file_from_link)
 
     def display_monument_data(self, data):
         print('Детали памятника:', data)
@@ -51,14 +47,13 @@ class ReadMonumentView(QDialog, BaseView):
         """
 
         files = data.get("files", [])
-        print('files', files)
         if files:
             content += "<h2>Файлы</h2><ul>"
             for file in files:
                 content += f"""
                     <li>
                         <b>{file['file_type']}</b>: {file['file_description']}<br>
-                        <i>{file['file_path']}</i>
+                        <i><a href="{file['file_path']}">{file['file_path']}</a></i>
                     </li>
                 """
             content += "</ul>"
@@ -66,6 +61,24 @@ class ReadMonumentView(QDialog, BaseView):
             content += "<h2>Файлы</h2><p>Нет прикреплённых файлов.</p>"
 
         self.MonumentContainer.setHtml(content)
+
+    def open_file_from_link(self, url: QUrl):
+        # Decode the URL path to handle %-encoded characters
+        file_path = QUrl.fromPercentEncoding(url.toString().encode())
+        
+        # Remove any URL scheme (like "file://") if present
+        if file_path.startswith("file://"):
+            file_path = file_path[7:]
+        
+        # Convert to absolute path
+        absolute_path = os.path.abspath(os.path.join(config.BASE_APP_DIR, file_path))
+        
+        print(f"Ищем файл по пути: {absolute_path}")
+        
+        if os.path.exists(absolute_path):
+            QDesktopServices.openUrl(QUrl.fromLocalFile(absolute_path))
+        else:
+            print(f"Файл не найден: {absolute_path}")
 
 class ReadMonumentController(QObject):
     def __init__(self,  monument_data, parent=None):
