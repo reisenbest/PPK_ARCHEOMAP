@@ -447,7 +447,14 @@ class DataBaseFilesTableManager:
                 "file_description": query.value("file_description")
             })
         return files
-
+        
+    def update_file_paths(self, file_id: int, new_path: str):
+        query = QSqlQuery()
+        query.prepare(self.db_queries.update_file_paths_query())
+        query.addBindValue(new_path)
+        query.addBindValue(file_id)
+        if not query.exec_():
+            raise Exception(f"Не удалось обновить путь файла ID {file_id}: {query.lastError().text()}")
 
 class DataBaseCoordinateTableManager:
     
@@ -461,9 +468,10 @@ class UnionDataBaseManagerController:
     def __init__(self):
         self.db_common = DataBaseManager()
         self.db_queries = DataBaseQueries()
-        self.files = DataBaseFilesTableManager(self.db_common, self.db_queries)
-        self.coordinates = DataBaseCoordinateTableManager(self.db_common, self.db_queries )
-        self.monuments = DataBaseMonumentsTableManager(self.db_common, self.db_queries)
+
+        self.files_table = DataBaseFilesTableManager(self.db_common, self.db_queries)
+        self.coordinates_table = DataBaseCoordinateTableManager(self.db_common, self.db_queries)
+        self.monuments_table = DataBaseMonumentsTableManager(self.db_common, self.db_queries)
         
 
 

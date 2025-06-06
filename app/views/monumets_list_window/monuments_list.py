@@ -70,7 +70,7 @@ class MonumentListController(QObject):
     @pyqtSlot()
     def show_read_monument(self):
         if self.current_monument_id:
-            monument = self.db_manager.monuments.get_monument_by_id(self.current_monument_id)
+            monument = self.db_manager.monuments_table.get_monument_by_id(self.current_monument_id)
             self.read_monument = ReadMonumentController(monument_data=monument)
             self.read_monument.show()
 
@@ -84,7 +84,7 @@ class MonumentListController(QObject):
     @pyqtSlot()
     def update_monument(self):
         if self.current_monument_id:
-            monument = self.db_manager.monuments.get_monument_by_id(self.current_monument_id)
+            monument = self.db_manager.monuments_table.get_monument_by_id(self.current_monument_id)
             self.update_monument = UpdateMonumentController(monument_details=monument, db_manager=self.db_manager)
             result = self.update_monument.view.exec()
             if result == QDialog.Accepted:
@@ -93,7 +93,7 @@ class MonumentListController(QObject):
     @pyqtSlot()
     def delete_monument(self):
         if self.current_monument_id:
-            monument = self.db_manager.monuments.get_monument_by_id(self.current_monument_id)
+            monument = self.db_manager.monuments_table.get_monument_by_id(self.current_monument_id)
             self.delete_dialog = DeleteMonumentController(monument_details=monument, db_manager=self.db_manager)
             result = self.delete_dialog.view.exec()
             if result == QDialog.Accepted:

@@ -155,7 +155,7 @@ class CreateMonumentController(QObject):
 
         # --- СОЗДАНИЕ ---
         try:
-            success = self.db_manager.monuments.create_monument(data=data_to_insert)
+            success = self.db_manager.monuments_table.create_monument(data=data_to_insert)
             if success:
                 self.view.accept()
         except Exception as e:

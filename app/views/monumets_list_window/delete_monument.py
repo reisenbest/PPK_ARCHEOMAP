@@ -36,7 +36,7 @@ class DeleteMonumentController(QObject):
         monument_name = self.monument_details['name']  # имя, как в БД
 
         try:
-            success = self.db_manager.monuments.delete_monument_by_id(monument_id)
+            success = self.db_manager.monuments_table.delete_monument_by_id(monument_id)
             if success:
                 # --- Удаление папки ---
                 try:

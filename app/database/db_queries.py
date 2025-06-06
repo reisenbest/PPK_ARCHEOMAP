@@ -174,5 +174,8 @@ class DataBaseQueries:
             INSERT INTO Files (file_path, file_type, file_description, monument_id)
             VALUES (?, ?, ?, ?)
             '''
-
-    
+    @staticmethod
+    def update_file_paths_query():
+        return '''
+            UPDATE files SET file_path = ? WHERE file_id = ?
+        '''

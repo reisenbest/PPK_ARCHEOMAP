@@ -49,7 +49,7 @@ class MapBridge(QObject):
 
     @pyqtSlot(result='QVariant')
     def get_monuments_markers(self):
-        monuments = self.db_manager.monuments.get_monuments()
+        monuments = self.db_manager.monuments_table.get_monuments()
         data = []
         for monument in monuments:
             print('look', monument)
