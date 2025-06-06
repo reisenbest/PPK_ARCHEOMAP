@@ -31,6 +31,7 @@ class InformationController(QObject):
         self.view = InformationView()
         self.db_manager = db_manager
         self.setup_connections()
+        self.information_dialog_window = AboutAuthorsController()
 
     def setup_connections(self):
         self.view.AboutAuthorsButton.clicked.connect(self.show_about_authors)
@@ -40,5 +41,4 @@ class InformationController(QObject):
 
     @pyqtSlot() 
     def show_about_authors(self):
-        self.dialog = AboutAuthorsController()
-        self.dialog.view.exec_()  # вызываем exec_() на объекте QDialog
+        self.information_dialog_window.view.exec_()  # вызываем exec_() на объекте QDialog

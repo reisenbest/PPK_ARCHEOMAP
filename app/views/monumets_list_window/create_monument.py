@@ -8,6 +8,7 @@ from PyQt5.QtWidgets import QDialog, QMessageBox
 from PyQt5.QtCore import pyqtSlot, QObject
 from PyQt5.uic import loadUi
 from PyQt5.QtWidgets import QFileDialog
+from PyQt5.QtWidgets import QInputDialog
 import json
 from utils.base_classes import BaseView
 from utils.validate_manager import ValidateUILevelManager   
@@ -41,6 +42,7 @@ class CreateMonumentController(QObject):
         self.setup_connections()
         self.set_placeholders()
         self.validator = ValidateUILevelManager(db_manager=self.db_manager)
+        self.selected_files = []  # список словарей с путём и описанием
 
     def show(self):
         self.view.show()
@@ -70,8 +72,28 @@ class CreateMonumentController(QObject):
     @pyqtSlot()
     def browse_file(self):
         file_path, _ = QFileDialog.getOpenFileName(self.view, "Выберите файл", "", "Все файлы (*.*)")
-        if file_path:
-            self.view.filePathInsert.setText(file_path)
+        if not file_path:
+            return
+
+        # Ввод описания файла
+        description, ok = QInputDialog.getText(self.view, "Описание файла", f"Введите описание для:\n{os.path.basename(file_path)}")
+        if not ok:
+            return
+
+        # Ввод типа файла
+        file_type, ok_type = QInputDialog.getText(self.view, "Тип файла", f"Введите тип для:\n{os.path.basename(file_path)} (например: pdf, jpg, obj, txt...)")
+        if not ok_type:
+            return
+
+        self.selected_files.append({
+            'path': file_path,
+            'description': description.strip(),
+            'file_type': file_type.strip()
+        })
+
+        # Обновить поле отображения файлов
+        filenames = [os.path.basename(f['path']) for f in self.selected_files]
+        self.view.filePathInsert.setText("; ".join(filenames))
     
     @pyqtSlot()
     def create_monument(self):
@@ -90,24 +112,27 @@ class CreateMonumentController(QObject):
 
         # Скопировать файл
         files_data = []
-        if raw_file_path and os.path.exists(raw_file_path):
-            try:
-                filename = os.path.basename(raw_file_path)
-                target_path = os.path.join(monument_path, filename)
-                shutil.copy(raw_file_path, target_path)
-                print(f"Файл скопирован: {target_path}")
-                print(config.BASE_APP_DIR)
 
-                relative_path = os.path.relpath(target_path, config.BASE_APP_DIR)
+        for file_entry in self.selected_files:
+            file_path = file_entry['path']
+            description = file_entry['description']
 
-                files_data.append({
-                    'file_path': relative_path,
-                    'file_type': None,
-                    'file_description': None
-                })
-            except Exception as copy_err:
-                QMessageBox.warning(self.view, "Ошибка при копировании файла", str(copy_err))
-                return
+            if os.path.exists(file_path):
+                try:
+                    filename = os.path.basename(file_path)
+                    target_path = os.path.join(monument_path, filename)
+                    shutil.copy(file_path, target_path)
+
+                    relative_path = os.path.relpath(target_path, config.DATA_STORAGE_DIR)
+
+                    files_data.append({
+                        'file_path': relative_path,
+                        'file_type': file_entry['file_type'],
+                        'file_description': description
+                    })
+                except Exception as copy_err:
+                    QMessageBox.warning(self.view, "Ошибка при копировании файла", f"{file_path}\n{str(copy_err)}")
+                    return
 
         # Собрать финальный словарь для вставки
         data_to_insert = {

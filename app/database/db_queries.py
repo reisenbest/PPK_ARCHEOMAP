@@ -153,4 +153,26 @@ class DataBaseQueries:
             FROM Monuments m
             LEFT JOIN Coordinates c ON m.monument_id = c.monument_id
             """
+    
+    @staticmethod
+    def get_files_for_monument_by_monument_id():
+        return """
+        SELECT file_id, file_path, file_type, file_description 
+        FROM Files 
+        WHERE monument_id = ?
+        """
+    @staticmethod
+    def get_file_path_by_id():
+        return '''SELECT file_path FROM Files WHERE file_id = ?'''
+    @staticmethod
+    def delete_file_by_id():
+        return '''DELETE FROM Files WHERE file_id = ?'''
+    
+    @staticmethod
+    def insert_file():
+        return '''
+            INSERT INTO Files (file_path, file_type, file_description, monument_id)
+            VALUES (?, ?, ?, ?)
+            '''
 
+    

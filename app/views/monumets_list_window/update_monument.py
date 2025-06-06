@@ -7,7 +7,8 @@ from PyQt5.QtWidgets import QDialog, QMessageBox
 from PyQt5.QtCore import pyqtSlot, QObject
 from PyQt5.uic import loadUi
 from utils.base_classes import BaseView
-from utils.validate_manager import ValidateUILevelManager   
+from utils.validate_manager import ValidateUILevelManager
+from views.monumets_list_window.manage_files import ManageFilesController
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..')))
 
@@ -36,9 +37,14 @@ class UpdateMonumentController(QObject):
         self.view = UpdateMonumentView()
         self.db_manager = db_manager
         self.monument_details = monument_details
-        self.view.display_monument_data(monument_data=monument_details)  # Заполняем окно данными
+        self.view.display_monument_data(monument_data=monument_details)
         self.setup_connections()
         self.validator = ValidateUILevelManager(db_manager=self.db_manager)
+        self.manage_files_controller = ManageFilesController(
+                                                                db_manager=self.db_manager,
+                                                                monument_id=self.monument_details['monument_id'],
+                                                                parent=self.view
+                                                            )
 
     def show(self):
         self.view.show()
@@ -48,11 +54,17 @@ class UpdateMonumentController(QObject):
         # Подключаем действия к кнопкам
         self.view.acceptUpdBtn.clicked.connect(self.update_monument)
         self.view.cancelBtn.clicked.connect(self.cancel_delete)  # Обработчик кнопки "Отмена
+        self.view.addDelFilesBtn.clicked.connect(self.manage_files)  # Обработчик кнопки "добавиь\удалить файл"
     
     @pyqtSlot()
     def cancel_delete(self):
         """Отмена изменение. Просто закрыть окно."""
         self.view.reject()  # Закрытие окна без изменение
+    
+    @pyqtSlot()
+    def manage_files(self):
+        self.manage_files_controller.exec_dialog()
+    
     
     @pyqtSlot()
     def update_monument(self):

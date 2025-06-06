@@ -52,14 +52,14 @@ class ReadMonumentView(QDialog, BaseView):
             for file in files:
                 content += f"""
                     <li>
-                        <b>{file['file_type']}</b>: {file['file_description']}<br>
+                        <b>fyle type: {file['file_type']}</b>: description: {file['file_description']}<br>
                         <i><a href="{file['file_path']}">{file['file_path']}</a></i>
                     </li>
                 """
             content += "</ul>"
         else:
             content += "<h2>Файлы</h2><p>Нет прикреплённых файлов.</p>"
-
+        
         self.MonumentContainer.setHtml(content)
 
     def open_file_from_link(self, url: QUrl):
@@ -71,7 +71,7 @@ class ReadMonumentView(QDialog, BaseView):
             file_path = file_path[7:]
         
         # Convert to absolute path
-        absolute_path = os.path.abspath(os.path.join(config.BASE_APP_DIR, file_path))
+        absolute_path = os.path.abspath(os.path.join(config.DATA_STORAGE_DIR, file_path))
         
         print(f"Ищем файл по пути: {absolute_path}")
         

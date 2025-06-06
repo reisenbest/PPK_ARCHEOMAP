@@ -199,6 +199,19 @@
     <string>COORDINATE NOTE</string>
    </property>
   </widget>
+  <widget class="QPushButton" name="addDelFilesBtn">
+   <property name="geometry">
+    <rect>
+     <x>740</x>
+     <y>260</y>
+     <width>201</width>
+     <height>51</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>add|delete files</string>
+   </property>
+  </widget>
  </widget>
  <resources/>
  <connections/>

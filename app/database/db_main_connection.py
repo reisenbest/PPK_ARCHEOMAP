@@ -5,7 +5,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from database.db_queries import DataBaseQueries
 from database.db_validate import ValidateSQLLevelManager
 import config
-
+from typing import List, Dict
 
 
 from PyQt5.QtSql import QSqlDatabase, QSqlQuery
@@ -146,6 +146,25 @@ class DataBaseManager:
             return record
 
         return None
+    
+    def get_files_for_monument_by_monument_id(self, monument_id: int):
+        query = QSqlQuery(self.db)
+        query.prepare(self.db_queries.get_files_for_monument_by_monument_id())
+        query.addBindValue(monument_id)
+
+        if not query.exec():
+            raise Exception(f"Ошибка при выполнении запроса: {query.lastError().text()}")
+
+        files = []
+        while query.next():
+            files.append({
+                "file_id": query.value("file_id"),
+                "file_path": query.value("file_path"),
+                "file_type": query.value("file_type"),
+                "file_description": query.value("file_description")
+            })
+        return files
+
 
     def create_monument(self, data: dict):
         """
@@ -245,6 +264,7 @@ class DataBaseManager:
         # Разделение на поля Monuments и Coordinates
         monument_fields = {"name", "description", "research_object"}
         coordinates_fields = {"latitude", "longitude", "note"}
+        
 
         # формирование словаря только с полями относящимися к монументс
         monument_data = {k: v for k,
@@ -348,6 +368,38 @@ class DataBaseManager:
 
         return True  # возвращается True если все успешно. Это тру потом используется при CRUD операциях, при обработке ошибок и обновлении окна со списоком памятников после CRUD операций
 
+    def delete_file_by_id(self, file_id: int) -> None:
+        query = QSqlQuery(self.db)
+        query.prepare(self.db_queries.get_file_path_by_id())  # 'SELECT file_path FROM Files WHERE file_id = ?'
+        query.addBindValue(file_id)
+
+        if not query.exec() or not query.next():
+            raise Exception(f"Файл с ID {file_id} не найден.")
+
+        file_path = query.value("file_path")
+
+        if file_path and os.path.exists(file_path):
+            try:
+                os.remove(file_path)
+            except Exception as e:
+                raise Exception(f"Не удалось удалить файл: {file_path} — {e}")
+
+        del_query = QSqlQuery(self.db)
+        del_query.prepare(self.db_queries.delete_file_by_id())  # 'DELETE FROM Files WHERE file_id = ?'
+        del_query.addBindValue(file_id)
+        if not del_query.exec():
+            raise Exception(f"Ошибка при удалении файла с ID {file_id}: {del_query.lastError().text()}")
+    def add_file(self, file_path: str, file_type: str, description: str, monument_id: int) -> None:
+        query = QSqlQuery(self.db)
+        query.prepare(self.db_queries.insert_file())
+        query.addBindValue(file_path)
+        query.addBindValue(file_type.strip())
+        query.addBindValue(description.strip())
+        query.addBindValue(monument_id)
+
+        if not query.exec():
+            raise Exception(f"Ошибка добавления файла в БД: {query.lastError().text()}")
+            
     def get_info_about_table(self, table_name: str):
         # Создаём объект запроса, используя подключение к базе
         query = QSqlQuery(self.db)
