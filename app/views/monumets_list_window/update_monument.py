@@ -88,7 +88,7 @@ class UpdateMonumentController(QObject):
             return
 
         try:
-            success = self.db_manager.update_monument_by_id(
+            success = self.db_manager.monuments.update_monument_by_id(
                 monument_id=monument['monument_id'],
                 monument=monument
             )

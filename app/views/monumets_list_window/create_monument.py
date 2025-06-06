@@ -55,7 +55,7 @@ class CreateMonumentController(QObject):
         self.view.browseBtn.clicked.connect(self.browse_file) # загрузить файл
     @pyqtSlot()
     def set_placeholders(self):
-        table_info = self.db_manager.get_info_about_table('Monuments')
+        table_info = self.db_manager.db_common.get_info_about_table('Monuments')
         placeholders = {}
 
         for col in table_info:
@@ -155,7 +155,7 @@ class CreateMonumentController(QObject):
 
         # --- СОЗДАНИЕ ---
         try:
-            success = self.db_manager.create_monument(data=data_to_insert)
+            success = self.db_manager.monuments.create_monument(data=data_to_insert)
             if success:
                 self.view.accept()
         except Exception as e:

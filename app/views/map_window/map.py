@@ -9,6 +9,7 @@ from PyQt5.QtCore import QUrl, pyqtSlot, QObject
 from utils.base_classes import BaseView
 from PyQt5.QtWebChannel import QWebChannel
 from PyQt5.QtCore import pyqtSlot
+from database.db_main_connection import DataBaseMonumentsTableManager
 # Добавляем корневую директорию в sys.path
 # Обеспечиваем корректный импорт при запуске из корня
 
@@ -45,9 +46,10 @@ class MapBridge(QObject):
     def __init__(self, db_manager, parent=None):  # <-- получаем MapBridge извне
         super().__init__(parent)
         self.db_manager = db_manager
+
     @pyqtSlot(result='QVariant')
     def get_monuments_markers(self):
-        monuments = self.db_manager.get_monuments()
+        monuments = self.db_manager.monuments.get_monuments()
         data = []
         for monument in monuments:
             print('look', monument)

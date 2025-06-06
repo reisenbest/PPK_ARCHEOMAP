@@ -3,7 +3,7 @@ import sys
 from PyQt5.QtWidgets import QMainWindow, QApplication
 from PyQt5.uic import loadUi  # Импортируем функцию для загрузки .ui файла
 from PyQt5.QtCore import pyqtSlot, QObject
-from database.db_main_connection import DataBaseManager
+from database.db_main_connection import UnionDataBaseManagerController
 
 # Добавляем корневую директорию в sys.path
 # Обеспечиваем корректный импорт при запуске из корня
@@ -28,7 +28,14 @@ class MainMenuController(QObject):  # Наследуем от QObject для р�
         super().__init__(parent)
         self.view = MainMenuView()
         self.setup_connections()
-        self.db_manager = DataBaseManager()
+        self.db_manager = db_manager
+        
+class MainMenuController(QObject):  # Наследуем от QObject для работы с сигналами и слотами
+    def __init__(self, db_manager, parent=None):
+        super().__init__(parent)
+        self.view = MainMenuView()
+        self.setup_connections()
+        self.db_manager = db_manager
 
     def setup_connections(self):
         self.view.MenuExitButton.clicked.connect(self.exit_app)

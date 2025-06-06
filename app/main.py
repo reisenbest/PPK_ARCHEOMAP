@@ -1,14 +1,14 @@
 import sys
 from PyQt5.QtWidgets import QApplication
 from views.main_menu_window.main_menu import MainMenuController
-from database.db_main_connection import DataBaseManager
+from database.db_main_connection import UnionDataBaseManagerController
 
 
 def main():
     app = QApplication(sys.argv)
 
     # Инициализируем менеджер БД на основе QSql
-    db_manager = DataBaseManager()
+    db_manager = UnionDataBaseManagerController()
 
     # Передаём менеджер контроллеру
     controller = MainMenuController(db_manager=db_manager)
@@ -17,7 +17,7 @@ def main():
     exit_code = app.exec_()
 
     # Закрываем соединение при завершении
-    db_manager.close()
+    db_manager.db_common.close()
     sys.exit(exit_code)
 
 

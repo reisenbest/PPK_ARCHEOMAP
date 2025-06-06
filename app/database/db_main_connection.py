@@ -1,23 +1,19 @@
+from typing import List, Dict, Union
+from PyQt5.QtSql import QSqlError
+from PyQt5.QtSql import QSqlDatabase, QSqlQuery
+from typing import List, Dict
+import config
+from database.db_validate import ValidateSQLLevelManager
+from database.db_queries import DataBaseQueries
 import sys
 import os
 # TODO сделать одну точку входа базы данных при входе в приложение открывается коннект и им все пользуются
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from database.db_queries import DataBaseQueries
-from database.db_validate import ValidateSQLLevelManager
-import config
-from typing import List, Dict
 
-
-from PyQt5.QtSql import QSqlDatabase, QSqlQuery
-from PyQt5.QtSql import QSqlError
-from typing import List, Dict, Union
-
-
-
-
+    
 class DataBaseManager:
     '''
-    Класс для работы с БД SQLite через QtSql.
+    Базовый Класс для работы с БД SQLite через QtSql.
     Поддерживает единое подключение и основные CRUD-операции.
     '''
     _instance = None
@@ -45,6 +41,61 @@ class DataBaseManager:
         if self.db.isOpen():
             self.db.close()
             # QSqlDatabase.removeDatabase("qt_sql_default_connection")  # если singleton
+
+    def get_info_about_table(self, table_name: str):
+        # Создаём объект запроса, используя подключение к базе
+        query = QSqlQuery(self.db)
+
+        # Подготавливаем SQL-запрос на получение информации о структуре таблицы
+        # PRAGMA table_info(<table_name>) — это специальная команда SQLite,
+        # которая возвращает информацию о колонках указанной таблицы.
+        # Она не поддерживает параметризованные значения, поэтому имя таблицы вставляется напрямую.
+        query.prepare(f"PRAGMA table_info({table_name})")
+
+        # Выполняем запрос
+        if not query.exec():
+            # Если произошла ошибка — выбрасываем исключение с сообщением
+            raise Exception(f"Ошибка при запросе: {query.lastError().text()}")
+
+        # Здесь будет храниться информация обо всех колонках таблицы
+        table_data = []
+
+        # Обрабатываем строки результата запроса
+        while query.next():
+            # Для каждой строки (т.е. каждой колонки в таблице) возвращаются такие поля:
+            # 0: cid            — порядковый номер колонки
+            # 1: name           — имя колонки
+            # 2: type           — тип данных (например, TEXT, INTEGER)
+            # 3: notnull        — флаг: 1, если поле не может быть NULL
+            # 4: dflt_value     — значение по умолчанию (если задано)
+            # 5: pk             — флаг: 1, если это часть первичного ключа
+
+            column_info = {
+                # Порядковый номер столбца
+                "cid": query.value(0),
+                "name": query.value(1),                   # Имя столбца
+                # Тип данных (например, TEXT, INTEGER)
+                "type": query.value(2),
+                # True, если поле обязательно для заполнения
+                "notnull": bool(query.value(3)),
+                # Значение по умолчанию (или None)
+                "default_value": query.value(4),
+                # True, если это поле является частью первичного ключа
+                "primary_key": bool(query.value(5))
+            }
+
+            # Добавляем словарь с информацией о колонке в общий список
+            table_data.append(column_info)
+
+        # Возвращаем список словарей — по одному на каждую колонку таблицы
+        return table_data
+
+
+class DataBaseMonumentsTableManager:
+    """docstrDataBaseMonumentTableManager."""
+    def __init__(self, db_manager: DataBaseManager, db_queries):
+        self.db = db_manager.db
+        self.db_queries = db_queries
 
     def get_monuments(self):
         query = QSqlQuery(self.db_queries.get_monuments(), self.db)
@@ -84,30 +135,10 @@ class DataBaseManager:
 
         return list(monuments.values())
 
-    # def get_monuments(self):
-    #     """Получить список памятников (ID и имя).
-    #     """
-    #     # создание запроса с на получение полей id & name из таблицы  Monuments
-    #     # создание пустого списка для их хранения
-    #     # идем по записям пока они не кончатся и добалвяем в список словарь  1 столбец из полученной строки в id 2 столбец в name
-    #     # возвращает список памятников где каждый памятник - отдельный словарь
-    #     query = QSqlQuery(self.db_queries.get_monuments(), self.db)
-
-    #     monuments = []
-    #     while query.next():
-    #         record = {}
-    #         columns_count = query.record().count()
-    #         for i in range(columns_count):
-    #             column_name = query.record().fieldName(i)
-    #             column_value = query.value(i)
-    #             record[column_name] = column_value
-    #         monuments.append(record)
-
-    #     return monuments
-
     def get_monument_by_id(self, monument_id: int):
         # --- ВАЛИДАЦИЯ ---
-        validator = ValidateSQLLevelManager(db_manager=self, monument_data=monument_id)
+        validator = ValidateSQLLevelManager(
+            db_manager=self, monument_data=monument_id)
         is_valid, error_msg = validator.validate_read_method()
         if not is_valid:
             raise Exception(error_msg)
@@ -146,25 +177,6 @@ class DataBaseManager:
             return record
 
         return None
-    
-    def get_files_for_monument_by_monument_id(self, monument_id: int):
-        query = QSqlQuery(self.db)
-        query.prepare(self.db_queries.get_files_for_monument_by_monument_id())
-        query.addBindValue(monument_id)
-
-        if not query.exec():
-            raise Exception(f"Ошибка при выполнении запроса: {query.lastError().text()}")
-
-        files = []
-        while query.next():
-            files.append({
-                "file_id": query.value("file_id"),
-                "file_path": query.value("file_path"),
-                "file_type": query.value("file_type"),
-                "file_description": query.value("file_description")
-            })
-        return files
-
 
     def create_monument(self, data: dict):
         """
@@ -200,7 +212,8 @@ class DataBaseManager:
         files_data = data.get("files", [])
 
         # --- Валидация ---
-        validator = ValidateSQLLevelManager(db_manager=self, monument_data=data)
+        validator = ValidateSQLLevelManager(
+            db_manager=self, monument_data=data)
         is_valid, error_msg = validator.validate_create_method()
         if not is_valid:
             raise Exception(error_msg)
@@ -213,7 +226,8 @@ class DataBaseManager:
         query.addBindValue(monument_data.get('research_object'))
 
         if not query.exec():
-            raise Exception(f"Ошибка при добавлении памятника: {query.lastError().text()}")
+            raise Exception(
+                f"Ошибка при добавлении памятника: {query.lastError().text()}")
 
         monument_id = query.lastInsertId()
 
@@ -223,14 +237,16 @@ class DataBaseManager:
             placeholders = ", ".join(["?"] * len(coord_data)) + ", ?"
 
             coord_query = QSqlQuery(self.db)
-            coord_query.prepare(self.db_queries.create_coordinate(fields_clause, placeholders))
+            coord_query.prepare(self.db_queries.create_coordinate(
+                fields_clause, placeholders))
 
             for value in coord_data.values():
                 coord_query.addBindValue(value)
             coord_query.addBindValue(monument_id)
 
             if not coord_query.exec():
-                raise Exception(f"Ошибка при добавлении координат: {coord_query.lastError().text()}")
+                raise Exception(
+                    f"Ошибка при добавлении координат: {coord_query.lastError().text()}")
 
         # --- Вставка файлов ---
         for file in files_data:
@@ -249,7 +265,8 @@ class DataBaseManager:
             file_query.addBindValue(monument_id)
 
             if not file_query.exec():
-                raise Exception(f"Ошибка при добавлении файла: {file_query.lastError().text()}")
+                raise Exception(
+                    f"Ошибка при добавлении файла: {file_query.lastError().text()}")
 
         return True
 
@@ -264,7 +281,6 @@ class DataBaseManager:
         # Разделение на поля Monuments и Coordinates
         monument_fields = {"name", "description", "research_object"}
         coordinates_fields = {"latitude", "longitude", "note"}
-        
 
         # формирование словаря только с полями относящимися к монументс
         monument_data = {k: v for k,
@@ -368,9 +384,18 @@ class DataBaseManager:
 
         return True  # возвращается True если все успешно. Это тру потом используется при CRUD операциях, при обработке ошибок и обновлении окна со списоком памятников после CRUD операций
 
+
+class DataBaseFilesTableManager:
+    """docstrDataBaseMonumentTableManager."""
+    def __init__(self, db_manager: DataBaseManager, db_queries):
+        self.db = db_manager.db
+        self.db_queries = db_queries
+
     def delete_file_by_id(self, file_id: int) -> None:
+
         query = QSqlQuery(self.db)
-        query.prepare(self.db_queries.get_file_path_by_id())  # 'SELECT file_path FROM Files WHERE file_id = ?'
+        # 'SELECT file_path FROM Files WHERE file_id = ?'
+        query.prepare(self.db_queries.get_file_path_by_id())
         query.addBindValue(file_id)
 
         if not query.exec() or not query.next():
@@ -385,10 +410,13 @@ class DataBaseManager:
                 raise Exception(f"Не удалось удалить файл: {file_path} — {e}")
 
         del_query = QSqlQuery(self.db)
-        del_query.prepare(self.db_queries.delete_file_by_id())  # 'DELETE FROM Files WHERE file_id = ?'
+        # 'DELETE FROM Files WHERE file_id = ?'
+        del_query.prepare(self.db_queries.delete_file_by_id())
         del_query.addBindValue(file_id)
         if not del_query.exec():
-            raise Exception(f"Ошибка при удалении файла с ID {file_id}: {del_query.lastError().text()}")
+            raise Exception(
+                f"Ошибка при удалении файла с ID {file_id}: {del_query.lastError().text()}")
+
     def add_file(self, file_path: str, file_type: str, description: str, monument_id: int) -> None:
         query = QSqlQuery(self.db)
         query.prepare(self.db_queries.insert_file())
@@ -398,67 +426,45 @@ class DataBaseManager:
         query.addBindValue(monument_id)
 
         if not query.exec():
-            raise Exception(f"Ошибка добавления файла в БД: {query.lastError().text()}")
-            
-    def get_info_about_table(self, table_name: str):
-        # Создаём объект запроса, используя подключение к базе
+            raise Exception(
+                f"Ошибка добавления файла в БД: {query.lastError().text()}")
+
+    def get_files_for_monument_by_monument_id(self, monument_id: int):
         query = QSqlQuery(self.db)
+        query.prepare(self.db_queries.get_files_for_monument_by_monument_id())
+        query.addBindValue(monument_id)
 
-        # Подготавливаем SQL-запрос на получение информации о структуре таблицы
-        # PRAGMA table_info(<table_name>) — это специальная команда SQLite,
-        # которая возвращает информацию о колонках указанной таблицы.
-        # Она не поддерживает параметризованные значения, поэтому имя таблицы вставляется напрямую.
-        query.prepare(f"PRAGMA table_info({table_name})")
-
-        # Выполняем запрос
         if not query.exec():
-            # Если произошла ошибка — выбрасываем исключение с сообщением
-            raise Exception(f"Ошибка при запросе: {query.lastError().text()}")
+            raise Exception(
+                f"Ошибка при выполнении запроса: {query.lastError().text()}")
 
-        # Здесь будет храниться информация обо всех колонках таблицы
-        table_data = []
-
-        # Обрабатываем строки результата запроса
+        files = []
         while query.next():
-            # Для каждой строки (т.е. каждой колонки в таблице) возвращаются такие поля:
-            # 0: cid            — порядковый номер колонки
-            # 1: name           — имя колонки
-            # 2: type           — тип данных (например, TEXT, INTEGER)
-            # 3: notnull        — флаг: 1, если поле не может быть NULL
-            # 4: dflt_value     — значение по умолчанию (если задано)
-            # 5: pk             — флаг: 1, если это часть первичного ключа
-
-            column_info = {
-                # Порядковый номер столбца
-                "cid": query.value(0),
-                "name": query.value(1),                   # Имя столбца
-                # Тип данных (например, TEXT, INTEGER)
-                "type": query.value(2),
-                # True, если поле обязательно для заполнения
-                "notnull": bool(query.value(3)),
-                # Значение по умолчанию (или None)
-                "default_value": query.value(4),
-                # True, если это поле является частью первичного ключа
-                "primary_key": bool(query.value(5))
-            }
-
-            # Добавляем словарь с информацией о колонке в общий список
-            table_data.append(column_info)
-
-        # Возвращаем список словарей — по одному на каждую колонку таблицы
-        return table_data
+            files.append({
+                "file_id": query.value("file_id"),
+                "file_path": query.value("file_path"),
+                "file_type": query.value("file_type"),
+                "file_description": query.value("file_description")
+            })
+        return files
 
 
-x = DataBaseManager()
+class DataBaseCoordinateTableManager:
+    
+    def __init__(self, db_manager: DataBaseManager, db_queries):
+        self.db = db_manager.db
+        self.db_queries = db_queries
 
-print(x.get_monuments())
+    """docstrDataBaseMonumentTableManager."""
+
+class UnionDataBaseManagerController:
+    def __init__(self):
+        self.db_common = DataBaseManager()
+        self.db_queries = DataBaseQueries()
+        self.files = DataBaseFilesTableManager(self.db_common, self.db_queries)
+        self.coordinates = DataBaseCoordinateTableManager(self.db_common, self.db_queries )
+        self.monuments = DataBaseMonumentsTableManager(self.db_common, self.db_queries)
+        
+
 
 # TODO  НАПИСАТЬ В БД КЛАССЕ МЕТОДЫ КРУД И СЕРИАЛИЗАТОРЫ А В КЛАССАХ ИХ ИМПОРТИРОВАТЬ И ВЫЗЫВАТЬ!
-
-
-# print('asds')
-
-# x = DataBaseManager()
-
-# details = x.get_info_about_table('Monuments')
-# print(details)  # ← без этого ничего не будет видно

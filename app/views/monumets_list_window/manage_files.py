@@ -11,6 +11,7 @@ from PyQt5.QtGui import QStandardItemModel, QStandardItem
 import config
 from PyQt5.QtSql import QSqlQuery
 import re
+from database.db_main_connection import DataBaseFilesTableManager
 
 
 class ManageFilesView(QDialog, BaseView):
@@ -39,7 +40,7 @@ class ManageFilesController(QObject):
 
     def load_files(self):
         try:
-            files = self.db_manager.get_files_for_monument_by_monument_id(self.monument_id)
+            files = self.db_manager.files.get_files_for_monument_by_monument_id(self.monument_id)
         except Exception as e:
             QMessageBox.critical(self.view, "Ошибка загрузки", str(e))
             return
@@ -73,7 +74,7 @@ class ManageFilesController(QObject):
             return
 
         # Получаем данные памятника по ID
-        monument_record = self.db_manager.get_monument_by_id(self.monument_id)
+        monument_record = self.db_manager.monuments.get_monument_by_id(self.monument_id)
         if not monument_record:
             QMessageBox.critical(self.view, "Ошибка", "Не удалось получить данные памятника из базы")
             return
@@ -108,7 +109,7 @@ class ManageFilesController(QObject):
         cleaned_file_type = re.sub(r'[^\w\-]', '_', file_type.strip())
 
         try:
-            self.db_manager.add_file(relative_path, cleaned_file_type, cleaned_description, self.monument_id)
+            self.db_manager.files.add_file(relative_path, cleaned_file_type, cleaned_description, self.monument_id)
         except Exception as e:
             QMessageBox.critical(self.view, "Ошибка при добавлении файла в БД", str(e))
             return
@@ -134,7 +135,7 @@ class ManageFilesController(QObject):
             return
 
         # Получаем имя памятника для построения пути
-        monument_record = self.db_manager.get_monument_by_id(self.monument_id)
+        monument_record = self.db_manager.monuments.get_monument_by_id(self.monument_id)
         if not monument_record:
             QMessageBox.critical(self.view, "Ошибка", "Не удалось получить данные памятника из базы")
             return
@@ -164,7 +165,7 @@ class ManageFilesController(QObject):
                     continue
 
             try:
-                self.db_manager.delete_file_by_id(file_id)
+                self.db_manager.files.delete_file_by_id(file_id)
             except Exception as e:
                 QMessageBox.warning(self.view, "Ошибка удаления записи из базы", str(e))
 
