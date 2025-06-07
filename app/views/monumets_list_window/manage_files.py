@@ -12,6 +12,7 @@ import config
 from PyQt5.QtSql import QSqlQuery
 import re
 from database.db_main_connection import DataBaseFilesTableManager
+from utils.utils import UtilsForViews
 
 
 class ManageFilesView(QDialog, BaseView):
@@ -27,6 +28,8 @@ class ManageFilesController(QObject):
         self.db_manager = db_manager
         self.monument_id = monument_id
         self.selected_files = []
+        
+        self.utils = UtilsForViews()
 
         self.setup_connections()
         self.load_files()
@@ -61,18 +64,8 @@ class ManageFilesController(QObject):
 
     # @pyqtSlot()
     def browse_file(self):
-        file_path, _ = QFileDialog.getOpenFileName(self.view, "Выберите файл", "", "Все файлы (*.*)")
-        if not file_path:
-            return
 
-        description, ok = QInputDialog.getText(self.view, "Описание файла", f"Введите описание для:\n{os.path.basename(file_path)}")
-        if not ok:
-            return
-
-        file_type, ok_type = QInputDialog.getText(self.view, "Тип файла", f"Введите тип для:\n{os.path.basename(file_path)} (например: pdf, jpg, obj, txt...)")
-        if not ok_type:
-            return
-
+        file_data = self.utils.browse_file_in_file_system(view_obj=self.view)
         # Получаем данные памятника по ID
         monument_record = self.db_manager.monuments_table.get_monument_by_id(self.monument_id)
         if not monument_record:
@@ -89,14 +82,14 @@ class ManageFilesController(QObject):
         monument_folder = os.path.join(config.DATA_STORAGE_DIR, safe_name)
 
         # Обработка полного пути и имени файла
-        original_filename = os.path.basename(file_path)
+        original_filename = os.path.basename(file_data['path'])
         safe_filename = re.sub(r'[^\w\-. ]', '_', original_filename)  # точки и дефисы оставляем
 
         # Защита от спецсимволов во всём пути (не только имя файла!)
         safe_target_path = os.path.join(monument_folder, safe_filename)
 
         try:
-            shutil.copy(file_path, safe_target_path)
+            shutil.copy(file_data['path'], safe_target_path)
         except Exception as e:
             QMessageBox.critical(self.view, "Ошибка копирования файла", f"Не удалось скопировать файл:\n{str(e)}")
             return
@@ -105,8 +98,8 @@ class ManageFilesController(QObject):
         relative_path = os.path.relpath(safe_target_path, config.DATA_STORAGE_DIR)
 
         # Очистка дополнительных полей
-        cleaned_description = re.sub(r'[^\wа-яА-ЯёЁ0-9\-.,()!? ]', '_', description.strip())  # русский + цифры + знаки
-        cleaned_file_type = re.sub(r'[^\w\-]', '_', file_type.strip())
+        cleaned_description = re.sub(r'[^\wа-яА-ЯёЁ0-9\-.,()!? ]', '_', file_data['description'])  # русский + цифры + знаки
+        cleaned_file_type = re.sub(r'[^\w\-]', '_', file_data['file_type'])
 
         try:
             self.db_manager.files_table.add_file(relative_path, cleaned_file_type, cleaned_description, self.monument_id)

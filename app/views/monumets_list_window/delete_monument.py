@@ -7,6 +7,8 @@ from PyQt5.QtWidgets import QDialog, QMessageBox
 from PyQt5.QtCore import pyqtSlot, QObject
 from PyQt5.uic import loadUi
 from utils.base_classes import BaseView
+from utils.utils import UtilsForViews
+
 sys.path.append(os.path.abspath(os.path.join(
     os.path.dirname(__file__), '..', '..', '..')))
 
@@ -26,6 +28,8 @@ class DeleteMonumentController(QObject):
         self.db_manager = db_manager  # Ссылка на менеджер БД
         self.setup_connections()  # Настройка подключений (кнопки)
 
+        self.utils = UtilsForViews()
+
     def show(self):
         """Отображаем окно с данными памятника."""
         self.view.show()
@@ -39,19 +43,7 @@ class DeleteMonumentController(QObject):
             success = self.db_manager.monuments_table.delete_monument_by_id(monument_id)
             if success:
                 # --- Удаление папки ---
-                try:
-                    monument_path = os.path.join(config.DATA_STORAGE_DIR, monument_name)
-
-                    if os.path.exists(monument_path):
-                        shutil.rmtree(monument_path)
-                        print(f"Папка памятника удалена: {monument_path}")
-                except Exception as folder_err:
-                    QMessageBox.warning(
-                        self.view,
-                        "Предупреждение",
-                        f"Памятник удалён из базы данных,\n"
-                        f"но произошла ошибка при удалении папки:\n{folder_err}"
-                    )
+                self.utils.delete_monument_folder(monument_name=monument_name)
 
                 self.view.accept()  # Удаление прошло успешно
             else:

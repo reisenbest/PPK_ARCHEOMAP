@@ -11,7 +11,8 @@ from PyQt5.QtWidgets import QFileDialog
 from PyQt5.QtWidgets import QInputDialog
 import json
 from utils.base_classes import BaseView
-from utils.validate_manager import ValidateUILevelManager   
+from utils.validate_manager import ValidateUILevelManager
+from utils.utils import UtilsForViews
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..')))
 
 
@@ -41,7 +42,9 @@ class CreateMonumentController(QObject):
         self.db_manager = db_manager
         self.setup_connections()
         self.set_placeholders()
+
         self.validator = ValidateUILevelManager(db_manager=self.db_manager)
+        self.utils = UtilsForViews()
         self.selected_files = []  # список словарей с путём и описанием
 
     def show(self):
@@ -71,24 +74,12 @@ class CreateMonumentController(QObject):
 
     @pyqtSlot()
     def browse_file(self):
-        file_path, _ = QFileDialog.getOpenFileName(self.view, "Выберите файл", "", "Все файлы (*.*)")
-        if not file_path:
-            return
-
-        # Ввод описания файла
-        description, ok = QInputDialog.getText(self.view, "Описание файла", f"Введите описание для:\n{os.path.basename(file_path)}")
-        if not ok:
-            return
-
-        # Ввод типа файла
-        file_type, ok_type = QInputDialog.getText(self.view, "Тип файла", f"Введите тип для:\n{os.path.basename(file_path)} (например: pdf, jpg, obj, txt...)")
-        if not ok_type:
-            return
+        file_data = self.utils.browse_file_in_file_system(view_obj=self.view)
 
         self.selected_files.append({
-            'path': file_path,
-            'description': description.strip(),
-            'file_type': file_type.strip()
+            'path': file_data['path'],
+            'description': file_data['description'],
+            'file_type': file_data['file_type']
         })
 
         # Обновить поле отображения файлов
@@ -104,11 +95,7 @@ class CreateMonumentController(QObject):
 
         # Сначала создать папку
         monument_path = os.path.join(config.DATA_STORAGE_DIR, safe_name)
-        try:
-            os.makedirs(monument_path, exist_ok=True)
-        except Exception as folder_err:
-            QMessageBox.warning(self.view, "Ошибка при создании папки", str(folder_err))
-            return
+        self.utils.create_monument_folder(monument_path=monument_path)
 
         # Скопировать файл
         files_data = []

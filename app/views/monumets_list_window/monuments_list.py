@@ -9,6 +9,7 @@ from views.monumets_list_window.delete_monument import DeleteMonumentController
 from views.monumets_list_window.update_monument import UpdateMonumentController
 from views.monumets_list_window.create_monument import CreateMonumentController
 from utils.base_classes import BaseView
+from utils.utils import UtilsForViews
 from database.db_queries import DataBaseQueries
 
 
@@ -31,10 +32,12 @@ class MonumentListController(QObject):
         super().__init__(parent)
         self.db_manager = db_manager
         self.view = MonumentListView()
+        self.utils = UtilsForViews()
         self.current_monument_id = None
 
         self.setup_connections()
         self.update_buttons_state(False)
+
 
     def show(self):
         self.view.show()
@@ -77,27 +80,29 @@ class MonumentListController(QObject):
     @pyqtSlot()
     def create_monument(self):
         self.create_monument = CreateMonumentController(db_manager=self.db_manager)
-        result = self.create_monument.view.exec()
-        if result == QDialog.Accepted:
-            self.refresh_data()  # Обновляем после успешного создания
+
+
+        self.utils.execute_operation_on_menu_buttons(controller_instance=self.create_monument,
+                                                     refresh_data_method=self.refresh_data)
+
 
     @pyqtSlot()
     def update_monument(self):
         if self.current_monument_id:
             monument = self.db_manager.monuments_table.get_monument_by_id(self.current_monument_id)
             self.update_monument = UpdateMonumentController(monument_details=monument, db_manager=self.db_manager)
-            result = self.update_monument.view.exec()
-            if result == QDialog.Accepted:
-                self.refresh_data()
+            
+            self.utils.execute_operation_on_menu_buttons(controller_instance=self.update_monument,
+                                                     refresh_data_method=self.refresh_data)
 
     @pyqtSlot()
     def delete_monument(self):
         if self.current_monument_id:
             monument = self.db_manager.monuments_table.get_monument_by_id(self.current_monument_id)
             self.delete_dialog = DeleteMonumentController(monument_details=monument, db_manager=self.db_manager)
-            result = self.delete_dialog.view.exec()
-            if result == QDialog.Accepted:
-                self.refresh_data()
+
+            self.utils.execute_operation_on_menu_buttons(controller_instance=self.delete_dialog,
+                                                     refresh_data_method=self.refresh_data)
 
     @pyqtSlot()
     def refresh_data(self):

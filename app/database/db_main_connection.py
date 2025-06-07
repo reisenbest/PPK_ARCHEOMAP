@@ -111,7 +111,6 @@ class DataBaseMonumentsTableManager:
 
     def get_monuments(self):
         query = QSqlQuery(self.db_queries.get_monuments(), self.db)
-
         monuments = {}
 
         while query.next():
@@ -229,7 +228,7 @@ class DataBaseMonumentsTableManager:
             query_str = self.db_queries.create_coordinate(fields_clause, placeholders)
             bind_values = list(coord_data.values()) + [monument_id]  # Собираем все значения для подстановки
             
-            self._execute_query(query_str, bind_values, error_msg=f"Ошибка при добавлении координат")
+            self.db_manager_common._execute_query(query_str, bind_values, error_msg=f"Ошибка при добавлении координат")
 
         # --- Вставка файлов ---
         for file in files_data:
@@ -270,7 +269,7 @@ class DataBaseMonumentsTableManager:
             set_clause = ", ".join(set_parts)
             values = list(monument_data.values()) + [monument_id]
 
-            self._execute_query(self.db_queries.update_monument_by_id(set_clause=set_clause),
+            self.db_manager_common._execute_query(self.db_queries.update_monument_by_id(set_clause=set_clause),
                                 values,
                                 error_msg="Ошибка при обновлении Monuments"
                                 )
@@ -278,7 +277,7 @@ class DataBaseMonumentsTableManager:
         # === Обновление Coordinates ===
         if coord_data:
             # Проверка существования координат
-            check_query = self._execute_query(
+            check_query = self.db_manager_common._execute_query(
                 self.db_queries.get_coordinate_by_monument_id(),
                 [monument_id],
                 error_msg="Ошибка при проверке координат"
@@ -293,7 +292,7 @@ class DataBaseMonumentsTableManager:
 
             if coord_exists:
                 # Обновление существующих координат
-                self._execute_query(self.db_queries.update_coordinate_by_monument_id(set_clause=set_clause),
+                self.db_manager_common._execute_query(self.db_queries.update_coordinate_by_monument_id(set_clause=set_clause),
                                     values + [monument_id],
                                     error_msg="Ошибка при обновлении Coordinates"
                                     )
@@ -302,7 +301,7 @@ class DataBaseMonumentsTableManager:
                 fields_clause = ", ".join(coord_data.keys()) + ", monument_id"
                 placeholders = ", ".join(["?"] * len(coord_data)) + ", ?"
                 
-                self._execute_query(self.db_queries.create_coordinate_by_monument_id(fields_clause=fields_clause, placeholders=placeholders),
+                self.db_manager_common._execute_query(self.db_queries.create_coordinate_by_monument_id(fields_clause=fields_clause, placeholders=placeholders),
                                     values + [monument_id],
                                     error_msg="Ошибка при добавлении Coordinates"
                                     )
@@ -316,16 +315,8 @@ class DataBaseMonumentsTableManager:
         if not is_valid:
             # Возвращаем или выбрасываем ошибку, чтобы контроллер мог её обработать
             raise Exception(error_msg)
-
         
-        query = QSqlQuery(self.db)
-        query.prepare(self.db_queries.delete_monument_by_id())
-        query.addBindValue(monument_id)
-        if not query.exec():
-            raise Exception(
-                f"Ошибка при удалении памятника: {query.lastError().text()}")
-        
-        self._execute_query(self.db_queries.delete_monument_by_id(), [monument_id], error_msg="Ошибка при удалении памятника sql запрос")
+        self.db_manager_common._execute_query(self.db_queries.delete_monument_by_id(), [monument_id], error_msg="Ошибка при удалении памятника sql запрос")
 
         return True  # возвращается True если все успешно. Это тру потом используется при CRUD операциях, при обработке ошибок и обновлении окна со списоком памятников после CRUD операций
 
@@ -335,29 +326,33 @@ class DataBaseFilesTableManager:
     def __init__(self, db_manager: DataBaseManager, db_queries):
         self.db = db_manager.db
         self.db_queries = db_queries
+        self.db_manager_common = db_manager
 
     def delete_file_by_id(self, file_id: int) -> None:
-        #проверяем есть ли файл 
-        query = self._execute_query(self.db_queries.get_file_path_by_id(), [file_id], error_msg=f"Файл с ID {file_id} не найден.")
+        # Проверяем есть ли файл
+        query = self.db_manager_common._execute_query(
+            self.db_queries.get_file_path_by_id(),
+            [file_id],
+            error_msg=f"Файл с ID {file_id} не найден."
+        )
         file_path = query.value("file_path")
         
-        #удаляем из системы сам файл
+        # Удаляем из системы сам файл
         if file_path and os.path.exists(file_path):
             try:
                 os.remove(file_path)
             except Exception as e:
                 raise Exception(f"Не удалось удалить файл: {file_path} — {e}")
             
-        #удаляем из базы путь
-        del_query = self._execute_query(self.db_queries.delete_file_by_id(), [file_id], error_msg=f"Ошибка при удалении файла с ID {file_id}: {del_query.lastError().text()}")
-        
+        # Удаляем из базы путь
+        self.db_manager_common._execute_query(self.db_queries.delete_file_by_id(),[file_id], error_msg=f"Ошибка при удалении файла с ID {file_id} из базы данных")    
 
 
     def add_file(self, file_path: str, file_type: str, description: str, monument_id: int) -> None:
         """
         Добавить файл в базу данных
         """
-        self._execute_query(self.db_queries.insert_file(), 
+        self.db_manager_common._execute_query(self.db_queries.insert_file(), 
                             [file_path, file_type.strip(), description.strip(), monument_id],
                             error_msg=f"Ошибка добавления файла в БД")
 
@@ -365,7 +360,7 @@ class DataBaseFilesTableManager:
         """
         Получить список файлов, связанных с памятником по его ID
         """
-        query = self._execute_query(self.db_queries.get_files_for_monument_by_monument_id(), [monument_id], error_msg=f"Ошибка при получении файлов для памятника {monument_id}")
+        query = self.db_manager_common._execute_query(self.db_queries.get_files_for_monument_by_monument_id(), [monument_id], error_msg=f"Ошибка при получении файлов для памятника {monument_id}")
         files = []
         while query.next():
             files.append({
@@ -381,7 +376,7 @@ class DataBaseFilesTableManager:
         """
         Обновить путь к файлу в базе данных
         """
-        self._execute_query(self.db_queries.update_file_paths_query(), [new_path, file_id], error_msg=f"Не удалось обновить путь файла ID {file_id}")
+        self.db_manager_common._execute_query(self.db_queries.update_file_paths_query(), [new_path, file_id], error_msg=f"Не удалось обновить путь файла ID {file_id}")
 
 class DataBaseCoordinateTableManager:
     
