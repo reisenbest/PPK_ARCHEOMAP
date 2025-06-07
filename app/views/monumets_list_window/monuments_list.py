@@ -101,7 +101,7 @@ class MonumentListController(QObject):
 
     @pyqtSlot()
     def refresh_data(self):
-        query_text = self.db_manager.db_queries.get_monuments_query()
+        query_text = self.db_manager.db_queries.get_monuments()
         self.view.model.setQuery(query_text, self.db_manager.db_common.db)
         self.update_buttons_state(False)
         self.current_monument_id = None

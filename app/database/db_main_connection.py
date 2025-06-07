@@ -41,6 +41,17 @@ class DataBaseManager:
         if self.db.isOpen():
             self.db.close()
             # QSqlDatabase.removeDatabase("qt_sql_default_connection")  # если singleton
+    
+    def _execute_query(self, query_str: str, values: list = None, error_msg: str = None):
+         #prepare + bind + exec (подготовка скл запроса, подстановка параметров, запрос)
+        query = QSqlQuery(self.db)
+        query.prepare(query_str)
+        if values:
+            for value in values:
+                query.addBindValue(value)
+        if not query.exec():
+            raise Exception(error_msg or query.lastError().text())
+        return query
 
     def get_info_about_table(self, table_name: str):
         # Создаём объект запроса, используя подключение к базе
@@ -96,6 +107,7 @@ class DataBaseMonumentsTableManager:
     def __init__(self, db_manager: DataBaseManager, db_queries):
         self.db = db_manager.db
         self.db_queries = db_queries
+        self.db_manager_common = db_manager
 
     def get_monuments(self):
         query = QSqlQuery(self.db_queries.get_monuments(), self.db)
@@ -144,9 +156,10 @@ class DataBaseMonumentsTableManager:
             raise Exception(error_msg)
 
         # --- Получение памятника и координат ---
-        query = QSqlQuery(self.db)
-        query.prepare(self.db_queries.get_monument_by_id())
-        query.addBindValue(monument_id)
+        #prepare + bind + exec (подготовка скл запроса, подстановка параметров, запрос)
+        query = self.db_manager_common._execute_query(self.db_queries.get_monument_by_id(),
+                                               [monument_id,],
+                                               error_msg='ошибка при получении памятника по id')
 
         if query.exec() and query.next():
             record = {}
@@ -157,23 +170,24 @@ class DataBaseMonumentsTableManager:
                 record[column_name] = column_value
 
             # --- Получение файлов ---
-            files_query = QSqlQuery(self.db)
-            files_query.prepare(self.db_queries.get_files_by_monument_id())
-            files_query.addBindValue(monument_id)
+            files_query = self.db_manager_common._execute_query(
+                self.db_queries.get_files_by_monument_id(),
+                [monument_id,],
+                error_msg=f'ошибка при получении файлов, связанных с памятником {monument_id}'
+            )
 
             files = []
-            if files_query.exec():
-                while files_query.next():
-                    files.append({
-                        "file_id": files_query.value("file_id"),
-                        "file_path": files_query.value("file_path"),
-                        "file_type": files_query.value("file_type"),
-                        "file_description": files_query.value("file_description"),
-                        "monument_id": files_query.value("monument_id")
-                    })
+            while files_query.next():
+                files.append({
+                    "file_id": files_query.value("file_id"),
+                    "file_path": files_query.value("file_path"),
+                    "file_type": files_query.value("file_type"),
+                    "file_description": files_query.value("file_description"),
+                    "monument_id": files_query.value("monument_id")
+                })
 
             record["files"] = files
-            print('recorc', record)
+            print('record', record)
             return record
 
         return None
@@ -181,24 +195,6 @@ class DataBaseMonumentsTableManager:
     def create_monument(self, data: dict):
         """
         Создаёт памятник и, при наличии, добавляет координаты и связанные файлы.
-
-        Ожидаемый формат данных:
-        {
-            "name": str,
-            "description": str,
-            "research_object": str,
-            "latitude": float,
-            "longitude": float,
-            "note": str,
-            "files": [
-                {
-                    "file_path": str,
-                    "file_type": str,
-                    "file_description": str
-                },
-                ...
-            ]
-        }
         """
         if not data:
             raise Exception("Нет данных для создания памятника")
@@ -219,34 +215,21 @@ class DataBaseMonumentsTableManager:
             raise Exception(error_msg)
 
         # --- Вставка памятника ---
-        query = QSqlQuery(self.db)
-        query.prepare(self.db_queries.create_monument())
-        query.addBindValue(monument_data.get('name'))
-        query.addBindValue(monument_data.get('description'))
-        query.addBindValue(monument_data.get('research_object'))
-
-        if not query.exec():
-            raise Exception(
-                f"Ошибка при добавлении памятника: {query.lastError().text()}")
-
+        #prepare + bind + exec (подготовка скл запроса, подстановка параметров, запрос)
+        query = self.db_manager_common._execute_query(self.db_queries.create_monument(),
+                                               [monument_data.get('name'), monument_data.get('description'), monument_data.get('research_object')],
+                                               error_msg='ошибка при создании памятника')
         monument_id = query.lastInsertId()
 
         # --- Вставка координат ---
         if coord_data:
             fields_clause = ", ".join(coord_data.keys()) + ", monument_id"
             placeholders = ", ".join(["?"] * len(coord_data)) + ", ?"
-
-            coord_query = QSqlQuery(self.db)
-            coord_query.prepare(self.db_queries.create_coordinate(
-                fields_clause, placeholders))
-
-            for value in coord_data.values():
-                coord_query.addBindValue(value)
-            coord_query.addBindValue(monument_id)
-
-            if not coord_query.exec():
-                raise Exception(
-                    f"Ошибка при добавлении координат: {coord_query.lastError().text()}")
+            
+            query_str = self.db_queries.create_coordinate(fields_clause, placeholders)
+            bind_values = list(coord_data.values()) + [monument_id]  # Собираем все значения для подстановки
+            
+            self._execute_query(query_str, bind_values, error_msg=f"Ошибка при добавлении координат")
 
         # --- Вставка файлов ---
         for file in files_data:
@@ -257,16 +240,7 @@ class DataBaseMonumentsTableManager:
             if not file_path:
                 continue  # обязательное поле
 
-            file_query = QSqlQuery(self.db)
-            file_query.prepare(self.db_queries.create_file())
-            file_query.addBindValue(file_path)
-            file_query.addBindValue(file_type)
-            file_query.addBindValue(file_description)
-            file_query.addBindValue(monument_id)
-
-            if not file_query.exec():
-                raise Exception(
-                    f"Ошибка при добавлении файла: {file_query.lastError().text()}")
+            self.db_manager_common._execute_query(self.db_queries.create_file(), [file_path, file_type, file_description, monument_id])
 
         return True
 
@@ -274,7 +248,6 @@ class DataBaseMonumentsTableManager:
         """
         Обновить памятник и его координаты по monument_id.
         """
-
         if not monument:
             return
 
@@ -282,51 +255,35 @@ class DataBaseMonumentsTableManager:
         monument_fields = {"name", "description", "research_object"}
         coordinates_fields = {"latitude", "longitude", "note"}
 
-        # формирование словаря только с полями относящимися к монументс
-        monument_data = {k: v for k,
-                         v in monument.items() if k in monument_fields}
-        # формирование словаря только с полями относящимися к координатами
-        coord_data = {k: v for k, v in monument.items()
-                      if k in coordinates_fields}
+        monument_data = {k: v for k, v in monument.items() if k in monument_fields}
+        coord_data = {k: v for k, v in monument.items() if k in coordinates_fields}
 
-        # Валидация (если нужно, можно проверить и по частям)
-        validator = ValidateSQLLevelManager(
-            db_manager=self, monument_data=monument)
+        # Валидация
+        validator = ValidateSQLLevelManager(db_manager=self, monument_data=monument)
         is_valid, error_msg = validator.validate_update_method()
         if not is_valid:
             raise Exception(error_msg)
 
         # === Обновление Monuments ===
         if monument_data:
-            # Создаёт список строк для SQL-запроса обновления, set_parts = ["name = ?", "description = ?"]
             set_parts = [f"{key} = ?" for key in monument_data.keys()]
-            # Объединяет элементы set_parts через запятую в одну строку. set_clause = "name = ?, description = ?"
             set_clause = ", ".join(set_parts)
-            values = list(monument_data.values())
+            values = list(monument_data.values()) + [monument_id]
 
-            query = QSqlQuery(self.db)
-            query.prepare(self.db_queries.update_monument_by_id(
-                set_clause=set_clause))
-            for value in values:
-                query.addBindValue(value)
-            query.addBindValue(monument_id)
-
-            if not query.exec():
-                raise Exception(
-                    f"Ошибка при обновлении Monuments: {query.lastError().text()}")
+            self._execute_query(self.db_queries.update_monument_by_id(set_clause=set_clause),
+                                values,
+                                error_msg="Ошибка при обновлении Monuments"
+                                )
 
         # === Обновление Coordinates ===
         if coord_data:
-            # Проверим, есть ли вообще координаты у этого monument_id
-            check_query = QSqlQuery(self.db)
-            check_query.prepare(
-                self.db_queries.get_coordinate_by_monument_id())
-            check_query.addBindValue(monument_id)
-
-            if not check_query.exec():
-                raise Exception(
-                    f"Ошибка при проверке координат: {check_query.lastError().text()}")
-
+            # Проверка существования координат
+            check_query = self._execute_query(
+                self.db_queries.get_coordinate_by_monument_id(),
+                [monument_id],
+                error_msg="Ошибка при проверке координат"
+            )
+            
             coord_exists = check_query.next()
             coord_id = check_query.value(0) if coord_exists else None
 
@@ -335,37 +292,22 @@ class DataBaseMonumentsTableManager:
             values = list(coord_data.values())
 
             if coord_exists:
-                # Обновление координат
-                query = QSqlQuery(self.db)
-                query.prepare(self.db_queries.update_coordinate_by_monument_id(
-                    set_clause=set_clause))
-                for value in values:
-                    query.addBindValue(value)
-                query.addBindValue(monument_id)
-
-                if not query.exec():
-                    raise Exception(
-                        f"Ошибка при обновлении Coordinates: {query.lastError().text()}")
-
+                # Обновление существующих координат
+                self._execute_query(self.db_queries.update_coordinate_by_monument_id(set_clause=set_clause),
+                                    values + [monument_id],
+                                    error_msg="Ошибка при обновлении Coordinates"
+                                    )
             else:
-                # Вставка новой записи в Coordinates
-                # Формирует перечень названий колонок, в которые будут вставляться данные. fields_clause = "latitude, longitude, monument_id"
+                # Вставка новых координат
                 fields_clause = ", ".join(coord_data.keys()) + ", monument_id"
-                # Формирует строку с плейсхолдерами (?) под значения, передаваемые в SQL-запрос. placeholders = "?, ?, ?" сколько в коорд дата элементов столько и вопросиков
                 placeholders = ", ".join(["?"] * len(coord_data)) + ", ?"
-                query = QSqlQuery(self.db)
-                query.prepare(self.db_queries.create_coordinate_by_monument_id(
-                    fields_clause=fields_clause, placeholders=placeholders))
-                for value in values:
-                    query.addBindValue(value)
-                query.addBindValue(monument_id)
-
-                if not query.exec():
-                    raise Exception(
-                        f"Ошибка при добавлении Coordinates: {query.lastError().text()}")
+                
+                self._execute_query(self.db_queries.create_coordinate_by_monument_id(fields_clause=fields_clause, placeholders=placeholders),
+                                    values + [monument_id],
+                                    error_msg="Ошибка при добавлении Coordinates"
+                                    )
 
         return True
-
     def delete_monument_by_id(self, monument_id: int):
         """Удалить памятник по ID."""
         validator = ValidateSQLLevelManager(
@@ -375,12 +317,15 @@ class DataBaseMonumentsTableManager:
             # Возвращаем или выбрасываем ошибку, чтобы контроллер мог её обработать
             raise Exception(error_msg)
 
+        
         query = QSqlQuery(self.db)
         query.prepare(self.db_queries.delete_monument_by_id())
         query.addBindValue(monument_id)
         if not query.exec():
             raise Exception(
                 f"Ошибка при удалении памятника: {query.lastError().text()}")
+        
+        self._execute_query(self.db_queries.delete_monument_by_id(), [monument_id], error_msg="Ошибка при удалении памятника sql запрос")
 
         return True  # возвращается True если все успешно. Это тру потом используется при CRUD операциях, при обработке ошибок и обновлении окна со списоком памятников после CRUD операций
 
@@ -392,52 +337,35 @@ class DataBaseFilesTableManager:
         self.db_queries = db_queries
 
     def delete_file_by_id(self, file_id: int) -> None:
-
-        query = QSqlQuery(self.db)
-        # 'SELECT file_path FROM Files WHERE file_id = ?'
-        query.prepare(self.db_queries.get_file_path_by_id())
-        query.addBindValue(file_id)
-
-        if not query.exec() or not query.next():
-            raise Exception(f"Файл с ID {file_id} не найден.")
-
+        #проверяем есть ли файл 
+        query = self._execute_query(self.db_queries.get_file_path_by_id(), [file_id], error_msg=f"Файл с ID {file_id} не найден.")
         file_path = query.value("file_path")
-
+        
+        #удаляем из системы сам файл
         if file_path and os.path.exists(file_path):
             try:
                 os.remove(file_path)
             except Exception as e:
                 raise Exception(f"Не удалось удалить файл: {file_path} — {e}")
+            
+        #удаляем из базы путь
+        del_query = self._execute_query(self.db_queries.delete_file_by_id(), [file_id], error_msg=f"Ошибка при удалении файла с ID {file_id}: {del_query.lastError().text()}")
+        
 
-        del_query = QSqlQuery(self.db)
-        # 'DELETE FROM Files WHERE file_id = ?'
-        del_query.prepare(self.db_queries.delete_file_by_id())
-        del_query.addBindValue(file_id)
-        if not del_query.exec():
-            raise Exception(
-                f"Ошибка при удалении файла с ID {file_id}: {del_query.lastError().text()}")
 
     def add_file(self, file_path: str, file_type: str, description: str, monument_id: int) -> None:
-        query = QSqlQuery(self.db)
-        query.prepare(self.db_queries.insert_file())
-        query.addBindValue(file_path)
-        query.addBindValue(file_type.strip())
-        query.addBindValue(description.strip())
-        query.addBindValue(monument_id)
-
-        if not query.exec():
-            raise Exception(
-                f"Ошибка добавления файла в БД: {query.lastError().text()}")
+        """
+        Добавить файл в базу данных
+        """
+        self._execute_query(self.db_queries.insert_file(), 
+                            [file_path, file_type.strip(), description.strip(), monument_id],
+                            error_msg=f"Ошибка добавления файла в БД")
 
     def get_files_for_monument_by_monument_id(self, monument_id: int):
-        query = QSqlQuery(self.db)
-        query.prepare(self.db_queries.get_files_for_monument_by_monument_id())
-        query.addBindValue(monument_id)
-
-        if not query.exec():
-            raise Exception(
-                f"Ошибка при выполнении запроса: {query.lastError().text()}")
-
+        """
+        Получить список файлов, связанных с памятником по его ID
+        """
+        query = self._execute_query(self.db_queries.get_files_for_monument_by_monument_id(), [monument_id], error_msg=f"Ошибка при получении файлов для памятника {monument_id}")
         files = []
         while query.next():
             files.append({
@@ -446,15 +374,14 @@ class DataBaseFilesTableManager:
                 "file_type": query.value("file_type"),
                 "file_description": query.value("file_description")
             })
-        return files
         
-    def update_file_paths(self, file_id: int, new_path: str):
-        query = QSqlQuery()
-        query.prepare(self.db_queries.update_file_paths_query())
-        query.addBindValue(new_path)
-        query.addBindValue(file_id)
-        if not query.exec_():
-            raise Exception(f"Не удалось обновить путь файла ID {file_id}: {query.lastError().text()}")
+        return files
+    
+    def update_file_paths(self, file_id: int, new_path: str) -> None:
+        """
+        Обновить путь к файлу в базе данных
+        """
+        self._execute_query(self.db_queries.update_file_paths_query(), [new_path, file_id], error_msg=f"Не удалось обновить путь файла ID {file_id}")
 
 class DataBaseCoordinateTableManager:
     

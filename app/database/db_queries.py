@@ -123,21 +123,7 @@ class DataBaseQueries:
         return  """
                 DELETE FROM Monuments WHERE monument_id = ?
                 """
-    @staticmethod
-    def get_monuments_query():
-            """Возвращает SQL-запрос для выборки памятников с координатами."""
-            return """
-                SELECT 
-                    m.monument_id,
-                    m.name,
-                    m.description,
-                    m.research_object,
-                    c.latitude,
-                    c.longitude,
-                    c.note
-                FROM Monuments m
-                LEFT JOIN Coordinates c ON m.monument_id = c.monument_id
-            """
+    
     @staticmethod
     def create_monument_list_view():
         """Возвращает SQL-запрос для отображения данных из БД в окне monument_list в табличном виде."""
