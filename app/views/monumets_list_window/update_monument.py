@@ -6,6 +6,7 @@ from PyQt5.QtWidgets import QDialog, QMessageBox
 from PyQt5.QtCore import pyqtSlot, QObject
 from PyQt5.uic import loadUi
 from utils.base_classes import BaseView
+from utils.utils import UtilsForViews
 from utils.validate_manager import ValidateUILevelManager
 from views.monumets_list_window.manage_files import ManageFilesController
 import shutil
@@ -43,6 +44,7 @@ class UpdateMonumentController(QObject):
             monument_id=self.monument_details['monument_id'],
             parent=self.view
         )
+        self.utils = UtilsForViews()
 
     def show(self):
         self.view.show()
@@ -102,17 +104,8 @@ class UpdateMonumentController(QObject):
                     new_path = os.path.join(
                         config.DATA_STORAGE_DIR, new_safe_name)
 
-                    try:
-                        if os.path.exists(old_path):
-                            os.rename(old_path, new_path)
-                            print(
-                                f"Папка переименована: {old_path} → {new_path}")
-                        elif not os.path.exists(new_path):
-                            os.makedirs(new_path)
-                            print(f"Создана новая папка памятника: {new_path}")
-                    except Exception as folder_err:
-                        QMessageBox.warning(
-                            self.view, "Ошибка переименования папки", str(folder_err))
+                    if not self.utils.rename_monument_folder(old_path=old_path,
+                                                             new_path=new_path):
                         return
 
                     # Обновляем пути файлов в базе данных
@@ -129,11 +122,11 @@ class UpdateMonumentController(QObject):
                                  f"Произошла ошибка при обновлении:\n{e}")
 
     def update_file_paths(self, monument_id: int, old_folder_name: str, new_folder_name: str):
-        files = self.db_manager.files_table.get_files_for_monument_by_monument_id(
-            monument_id)
+        
+        files = self.db_manager.files_table.get_files_for_monument_by_monument_id(monument_id)
 
-        for file in files:
-            old_rel_path = file['file_path']  # например, OLDNAME\abc.jpg
+        for file_instance in files:
+            old_rel_path = file_instance['file_path']  # например, OLDNAME\abc.jpg
 
             # Заменим только первую часть пути (название папки-памятника)
             parts = old_rel_path.split(os.sep)
@@ -147,7 +140,7 @@ class UpdateMonumentController(QObject):
 
             try:
                 self.db_manager.files_table.update_file_paths(
-                    file['file_id'], new_rel_path)
+                    file_instance['file_id'], new_rel_path)
             except Exception as e:
                 print(
-                    f"Ошибка обновления пути в БД для файла ID {file['file_id']}: {e}")
+                    f"Ошибка обновления пути в БД для файла ID {file_instance['file_id']}: {e}")

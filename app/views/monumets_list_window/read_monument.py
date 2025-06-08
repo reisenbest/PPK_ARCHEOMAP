@@ -3,6 +3,7 @@ from PyQt5.QtWidgets import QDialog
 from PyQt5.QtCore import QUrl
 from PyQt5.QtGui import QDesktopServices
 from utils.base_classes import BaseView
+from utils.utils import UtilsForViews
 import config
 
 
@@ -10,6 +11,7 @@ class ReadMonumentView(QDialog, BaseView):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.load_ui('read_monument_window.ui')
+        self.utils = UtilsForViews()
         
         # Отключаем автоматическое открытие ссылок в QTextBrowser
         self.MonumentContainer.setOpenLinks(False)
@@ -20,42 +22,7 @@ class ReadMonumentView(QDialog, BaseView):
     def display_monument_data(self, data):
         print('Детали памятника:', data)
 
-        content = f"""
-            <h2>ID памятника</h2>
-            <p>{data['monument_id']}</p>
-
-            <h2>Название</h2>
-            <p>{data['name']}</p>
-
-            <h2>Описание</h2>
-            <p>{data['description']}</p>
-
-            <h2>Объект исследования</h2>
-            <p>{data['research_object']}</p>
-
-            <h2>Широта</h2>
-            <p>{data['latitude']}</p>
-
-            <h2>Долгота</h2>
-            <p>{data['longitude']}</p>
-
-            <h2>Записка о координатах</h2>
-            <p>{data['note']}</p>
-        """
-
-        files = data.get("files", [])
-        if files:
-            content += "<h2>Файлы</h2><ul>"
-            for file in files:
-                content += f"""
-                    <li>
-                        <b>Тип файла: {file['file_type']}</b>: описание: {file['file_description']}<br>
-                        <i><a href="{file['file_path']}">{file['file_path']}</a></i>
-                    </li>
-                """
-            content += "</ul>"
-        else:
-            content += "<h2>Файлы</h2><p>Нет прикреплённых файлов.</p>"
+        content = self.utils.read_monument_content(data)
 
         self.MonumentContainer.setHtml(content)
 

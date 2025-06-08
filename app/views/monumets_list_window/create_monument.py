@@ -99,27 +99,15 @@ class CreateMonumentController(QObject):
 
         # Скопировать файл
         files_data = []
+        #TODO 
+        # FIXME: Внутри все сделано так, как будто при создании памятника доступен множественный выбор файлов
+        files_data = self.utils.copy_selected_files_to_monument_folder(view_obj=self.view,
+                                                                       selected_files=self.selected_files,
+                                                                       monument_path=monument_path
+                                                                       )
 
-        for file_entry in self.selected_files:
-            file_path = file_entry['path']
-            description = file_entry['description']
-
-            if os.path.exists(file_path):
-                try:
-                    filename = os.path.basename(file_path)
-                    target_path = os.path.join(monument_path, filename)
-                    shutil.copy(file_path, target_path)
-
-                    relative_path = os.path.relpath(target_path, config.DATA_STORAGE_DIR)
-
-                    files_data.append({
-                        'file_path': relative_path,
-                        'file_type': file_entry['file_type'],
-                        'file_description': description
-                    })
-                except Exception as copy_err:
-                    QMessageBox.warning(self.view, "Ошибка при копировании файла", f"{file_path}\n{str(copy_err)}")
-                    return
+        if files_data is None:
+            return  # ошибка уже была показана
 
         # Собрать финальный словарь для вставки
         data_to_insert = {

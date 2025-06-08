@@ -96,13 +96,12 @@ class ManageFilesController(QObject):
 
         # Получить относительный путь (безопасно)
         relative_path = os.path.relpath(safe_target_path, config.DATA_STORAGE_DIR)
-
-        # Очистка дополнительных полей
-        cleaned_description = re.sub(r'[^\wа-яА-ЯёЁ0-9\-.,()!? ]', '_', file_data['description'])  # русский + цифры + знаки
-        cleaned_file_type = re.sub(r'[^\w\-]', '_', file_data['file_type'])
-
+        
         try:
-            self.db_manager.files_table.add_file(relative_path, cleaned_file_type, cleaned_description, self.monument_id)
+            self.db_manager.files_table.add_file(relative_path, 
+                                                file_data['file_type'],
+                                                file_data['description'],
+                                                self.monument_id)
         except Exception as e:
             QMessageBox.critical(self.view, "Ошибка при добавлении файла в БД", str(e))
             return

@@ -40,8 +40,41 @@ class UtilsForViews:
         'description': description.strip(),
         'file_type': file_type.strip()
     }
+    def copy_selected_files_to_monument_folder(self,  view_obj, selected_files: list, monument_path: str,) -> list:
+        '''
+        при создании памятника получает данные о выбранном файле 
+        и копирует этот файл в директорию (папку) созданную для памятника
+        СЕЙЧАС СДЕЛАНО ЦИКЛОМ НА БУДУЩЕЕ ЧТОБЫ МОЖНО БЫЛО ПРИ СОЗДАНИИ 
+        ОБЪЕКТА МОНУМЕНТ ВЫБИРАТЬ СРАЗУ НЕСКОЛЬКО ФАЙЛОВ 
+        НО ПОКА МОЖНО ВЫБИРАТЬ ТОЛЬКО ОДИН
+        '''
+        files_data = []
 
+        for file_entry in selected_files:
+            file_path = file_entry['path']
+            description = file_entry['description']
 
+            if os.path.exists(file_path):
+                try:
+                    filename = os.path.basename(file_path)
+                    target_path = os.path.join(monument_path, filename)
+                    shutil.copy(file_path, target_path)
+
+                    relative_path = os.path.relpath(target_path, config.DATA_STORAGE_DIR)
+
+                    files_data.append({
+                        'file_path': relative_path,
+                        'file_type': file_entry['file_type'],
+                        'file_description': description
+                    })
+                except Exception as copy_err:
+                    QMessageBox.warning(self.view, "Ошибка при копировании файла", f"{file_path}\n{str(copy_err)}")
+                    return None  # или return []
+            else:
+                QMessageBox.warning(self.view, "Файл не найден", f"Файл не существует: {file_path}")
+                return None
+
+        return files_data
 
     def create_monument_folder(self, monument_path):
         '''
@@ -72,7 +105,30 @@ class UtilsForViews:
                         f"но произошла ошибка при удалении папки:\n{folder_err}"
                         )
             
+    def rename_monument_folder(self, old_path, new_path):
+        '''
+        изменение имени созданной папки при изменени имени монумента
+        '''
+        try:
+            if os.path.exists(old_path):
+                os.rename(old_path, new_path)
+                print(
+                    f"Папка переименована: {old_path} → {new_path}")
+            elif not os.path.exists(new_path):
+                os.makedirs(new_path)
+                print(f"Создана новая папка памятника: {new_path}")
+            return True
+        except Exception as folder_err:
+            QMessageBox.warning(
+                self.view, "Ошибка переименования папки", str(folder_err))
+            return False
     
+    def rename_files_paths(self):
+        '''
+        изменение путей к файлам в БД при изменении папки
+        '''
+        pass
+        
     def execute_operation_on_menu_buttons(self, controller_instance, refresh_data_method):
         '''
         удаление папки и ее содержимого для монумента при его удалении
@@ -83,3 +139,49 @@ class UtilsForViews:
         #если закрыл окно через ОКЕЙ то выполняем обновление окна основного со списком памятников чтобы подтянуть произошедшие изменения
         if result == QDialog.Accepted: 
             refresh_data_method()  # Обновляем после успешного создания
+
+
+    def read_monument_content(self, data):
+        '''
+        возвращает html разметку для отображения контента. мб надо возвращать файл со стилями?? 
+        пока так
+        '''
+        
+        content = f"""
+            <h2>ID памятника</h2>
+            <p>{data['monument_id']}</p>
+
+            <h2>Название</h2>
+            <p>{data['name']}</p>
+
+            <h2>Описание</h2>
+            <p>{data['description']}</p>
+
+            <h2>Объект исследования</h2>
+            <p>{data['research_object']}</p>
+
+            <h2>Широта</h2>
+            <p>{data['latitude']}</p>
+
+            <h2>Долгота</h2>
+            <p>{data['longitude']}</p>
+
+            <h2>Записка о координатах</h2>
+            <p>{data['note']}</p>
+        """
+
+        files = data.get("files", [])
+        if files:
+            content += "<h2>Файлы</h2><ul>"
+            for file in files:
+                content += f"""
+                    <li>
+                        <b>Тип файла: {file['file_type']}</b>: описание: {file['file_description']}<br>
+                        <i><a href="{file['file_path']}">{file['file_path']}</a></i>
+                    </li>
+                """
+            content += "</ul>"
+        else:
+            content += "<h2>Файлы</h2><p>Нет прикреплённых файлов.</p>"
+
+        return content
