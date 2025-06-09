@@ -1,0 +1,39 @@
+
+
+CREATE TABLE "Monuments" (
+	"monument_id"	INTEGER NOT NULL UNIQUE,
+	"name"	TEXT NOT NULL,
+	"description"	TEXT,
+	"research_object"	TEXT,
+	PRIMARY KEY("monument_id" AUTOINCREMENT)
+)
+
+
+CREATE TABLE "Coordinates" (
+	"coord_id"	INTEGER NOT NULL UNIQUE,
+	"latitude"	NUMERIC CHECK("latitude" BETWEEN 58 AND 61),
+	"longitude"	NUMERIC CHECK("longitude" BETWEEN 28 AND 31),
+	"monument_id"	INTEGER NOT NULL UNIQUE,
+	"note"	TEXT,
+	PRIMARY KEY("coord_id" AUTOINCREMENT),
+	FOREIGN KEY("monument_id") REFERENCES "Monuments"("monument_id") ON DELETE CASCADE
+)
+
+CREATE TABLE "ExcavationSquares" (
+	"square_id"	INTEGER NOT NULL UNIQUE,
+	"geometry"	TEXT NOT NULL,
+	"geom_description"	TEXT,
+	"monument_id"	INTEGER NOT NULL,
+	PRIMARY KEY("square_id" AUTOINCREMENT),
+	FOREIGN KEY("monument_id") REFERENCES "Monuments"("monument_id") ON DELETE CASCADE
+)
+
+CREATE TABLE "Files" (
+	"file_id"	INTEGER NOT NULL UNIQUE,
+	"file_path"	TEXT NOT NULL,
+	"file_type"	TEXT,
+	"file_description"	TEXT,
+	"monument_id"	INTEGER NOT NULL,
+	FOREIGN KEY("monument_id") REFERENCES "Monuments"("monument_id") ON DELETE CASCADE,
+	PRIMARY KEY("file_id" AUTOINCREMENT)
+)

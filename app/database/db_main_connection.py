@@ -130,10 +130,12 @@ class DataBaseMonumentsTableManager:
                     "latitude": latitude,
                     "longitude": longitude,
                     "note": note,
-                    "files": []
-                }
+                    "files": [],
+                    # 'excavation_square': [],
 
-            # Добавляем файл, если он есть
+                }
+      
+        # Добавляем файл, если он есть
             file_path = query.value("file_path")
             if file_path:
                 file_entry = {
@@ -143,7 +145,7 @@ class DataBaseMonumentsTableManager:
                 }
                 if file_entry not in monuments[monument_id]["files"]:
                     monuments[monument_id]["files"].append(file_entry)
-
+        print(list(monuments.values()))
         return list(monuments.values())
 
     def get_monument_by_id(self, monument_id: int):
@@ -156,9 +158,9 @@ class DataBaseMonumentsTableManager:
 
         # --- Получение памятника и координат ---
         #prepare + bind + exec (подготовка скл запроса, подстановка параметров, запрос)
-        query = self.db_manager_common._execute_query(self.db_queries.get_monument_by_id(),
+        query = self.db_manager_common._execute_query(self.db_queries.get_monument_by_id_query(),
                                                [monument_id,],
-                                               error_msg='ошибка при получении памятника по id')
+                                               error_msg='error with get monuument by id')
 
         if query.exec() and query.next():
             record = {}
@@ -170,12 +172,20 @@ class DataBaseMonumentsTableManager:
 
             # --- Получение файлов ---
             files_query = self.db_manager_common._execute_query(
-                self.db_queries.get_files_by_monument_id(),
+                self.db_queries.get_files_by_monument_id_query(),
                 [monument_id,],
                 error_msg=f'ошибка при получении файлов, связанных с памятником {monument_id}'
             )
+            excavation_squares_query = self.db_manager_common._execute_query(
+                self.db_queries.get_excavation_squares_by_monument_id_query(),
+                [monument_id,],
+                error_msg=f'ошибка при получении excavation squares, связанных с памятником {monument_id}'
+            )
 
+
+            #TODO:L сделать изящнее и короче этоткод
             files = []
+            excavation_squares = []
             while files_query.next():
                 files.append({
                     "file_id": files_query.value("file_id"),
@@ -185,7 +195,19 @@ class DataBaseMonumentsTableManager:
                     "monument_id": files_query.value("monument_id")
                 })
 
+            while excavation_squares_query.next():
+                excavation_squares.append({
+                    "square_id": excavation_squares_query.value("square_id"),
+                    "geometry": excavation_squares_query.value("geometry"),
+                    "geom_description": excavation_squares_query.value("geom_description"),
+                    "monument_id": excavation_squares_query.value("monument_id"),
+                })
+
+
+          
+
             record["files"] = files
+            record["excavation_squares"] = excavation_squares
             print('record', record)
             return record
 

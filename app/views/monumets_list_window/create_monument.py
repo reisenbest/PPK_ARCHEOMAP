@@ -13,6 +13,7 @@ import json
 from utils.base_classes import BaseView
 from utils.validate_manager import ValidateUILevelManager
 from utils.utils import UtilsForViews
+from views.monumets_list_window.put_excavation_squares import PutExcavationSquaresController
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..')))
 
 
@@ -45,6 +46,7 @@ class CreateMonumentController(QObject):
 
         self.validator = ValidateUILevelManager(db_manager=self.db_manager)
         self.utils = UtilsForViews()
+        self.put_excavation_squares_window = PutExcavationSquaresController()
         self.selected_files = []  # список словарей с путём и описанием
 
     def show(self):
@@ -56,6 +58,7 @@ class CreateMonumentController(QObject):
         self.view.createBtn.clicked.connect(self.create_monument)
         self.view.cancelBtn.clicked.connect(self.cancel_create)  # Обработчик кнопки "Отмена
         self.view.browseBtn.clicked.connect(self.browse_file) # загрузить файл
+        self.view.ExcavationSqrBtn.clicked.connect(self.put_excavation_squares) # загрузить поворотные точки раскопов 
     @pyqtSlot()
     def set_placeholders(self):
         table_info = self.db_manager.db_common.get_info_about_table('Monuments')
@@ -137,6 +140,7 @@ class CreateMonumentController(QObject):
             QMessageBox.warning(self.view, "Ошибка при создании памятника", str(e))
             
 
-
+    def put_excavation_squares(self):
+        self.put_excavation_squares_window.view.exec_()  # вызываем exec_() на объекте QDialog
 
     

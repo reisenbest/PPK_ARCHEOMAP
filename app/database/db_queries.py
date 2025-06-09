@@ -17,17 +17,14 @@ class DataBaseQueries:
                 m.research_object,
                 c.latitude,
                 c.longitude,
-                c.note,
-                f.file_path,
-                f.file_type,
-                f.file_description
+                c.note
             FROM Monuments m
             LEFT JOIN Coordinates c ON m.monument_id = c.monument_id
-            LEFT JOIN Files f ON m.monument_id = f.monument_id
+
         """
 
     @staticmethod
-    def get_monument_by_id():
+    def get_monument_by_id_query():
         return """
             SELECT 
                 m.monument_id,
@@ -43,7 +40,7 @@ class DataBaseQueries:
         """
     
     @staticmethod
-    def get_files_by_monument_id():
+    def get_files_by_monument_id_query():
         return """
             SELECT 
                 file_id,
@@ -52,6 +49,18 @@ class DataBaseQueries:
                 file_description,
                 monument_id
             FROM Files
+            WHERE monument_id = ?
+            """
+    
+    @staticmethod
+    def get_excavation_squares_by_monument_id_query():
+        return """
+            SELECT 
+                square_id,
+                geometry,
+                geom_description,
+                monument_id
+            FROM ExcavationSquares
             WHERE monument_id = ?
             """
 
@@ -76,6 +85,13 @@ class DataBaseQueries:
             INSERT INTO Files (file_path, file_type, file_description, monument_id)
             VALUES (?, ?, ?, ?)
         """
+    
+    @staticmethod
+    def create_excavation_square():
+        return """
+            INSERT INTO ExcavationSquares (geometry, geom_description, monument_id)
+            VALUES (?, ?, ?, ?)
+        """
 
     @staticmethod
     def update_monument_by_id(set_clause):
@@ -85,7 +101,7 @@ class DataBaseQueries:
                 SET {set_clause}
                 WHERE monument_id = ?
               """
-
+    #FIXME: два одинаковых метода, оставить один
     @staticmethod
     def get_coordinate_by_monument_id():
         return """
@@ -165,3 +181,32 @@ class DataBaseQueries:
         return '''
             UPDATE files SET file_path = ? WHERE file_id = ?
         '''
+    
+    #TODO:
+
+    @staticmethod
+    def get_excavation_squares_for_monument_by_monument_id():
+        return """
+        SELECT square_id, geometry, geom_description
+        FROM ExcavationSquares 
+        WHERE monument_id = ?
+        """
+    @staticmethod
+    def get_excavation_square_by_id():
+        return '''SELECT geometry, geom_description  FROM Files WHERE square_id = ?'''
+    
+    @staticmethod
+    def delete_excavation_square_by_id():
+        return '''DELETE FROM ExcavationSquares WHERE square_id = ?'''
+    
+    # @staticmethod
+    # def insert_file():
+    #     return '''
+    #         INSERT INTO Files (file_path, file_type, file_description, monument_id)
+    #         VALUES (?, ?, ?, ?)
+    #         '''
+    # @staticmethod
+    # def update_file_paths_query():
+    #     return '''
+    #         UPDATE files SET file_path = ? WHERE file_id = ?
+    #     '''

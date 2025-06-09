@@ -10,7 +10,7 @@ from PyQt5.QtWidgets import QWidget, QDialog
 #     super(UtilsForViews, self).__init__()
 #   arg
 
-  
+
 class UtilsForViews:
     def __init__(self):
       pass
@@ -183,5 +183,18 @@ class UtilsForViews:
             content += "</ul>"
         else:
             content += "<h2>Файлы</h2><p>Нет прикреплённых файлов.</p>"
+
+        excavation_squares = data.get("excavation_squares", [])
+        if excavation_squares:
+            content += "<h2>Территория исследования - поворотные точки</h2><ul>"
+            for excavation_square in excavation_squares:
+                content += f"""
+                    <li>
+                        <b>координаты: {excavation_square['geometry']}</b>: описание: {excavation_square['geom_description']}<br>
+                    </li>
+                """
+            content += "</ul>"
+        else:
+            content += "<h2>Файлы</h2><p>Нет поворотные точки</p>"
 
         return content
