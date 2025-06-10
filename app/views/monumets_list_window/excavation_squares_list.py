@@ -1,35 +1,38 @@
-
 import os
 import sys
 from PyQt5.QtWidgets import QDialog
 from PyQt5.QtCore import QObject
 from PyQt5.uic import loadUi
 from utils.base_classes import BaseView
+from views.monumets_list_window.put_excavation_squares import PutExcavationSquaresController
 import config
-from PyQt5.QtCore import Qt
 
 
-
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..')))
-
-class PutExcavationSquaresView(QDialog, BaseView):
+class ExcavationSquaresListView(QDialog, BaseView):
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.setWindowFlags(self.windowFlags() | Qt.WindowStaysOnTopHint)
-        self.load_ui('put_excavation_squares_window.ui')
-        self.setWindowModality(Qt.ApplicationModal)  # Блокирует все окна приложения
-        
+        self.load_ui('excavation_squares_list_dialog.ui')  # путь должен быть правильный
 
 
-class PutExcavationSquaresController(QObject):
+
+class ExcavationSquaresListController(QObject):
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.view = PutExcavationSquaresView(parent)  # ← передай родителя
+        self.view = ExcavationSquaresListView()
+        self.put_excavation_squares_window = PutExcavationSquaresController(self.view)
         self.setup_connections()
 
+
     def setup_connections(self):                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            
-        pass
+        self.view.addPolygonBtn.clicked.connect(self.put_polygon)
+        self.view.deletePolygonBtn.clicked.connect(self.deletePolygonBtn)
 
         
     def show(self):
         self.view.show()
+
+    def put_polygon(self, arg):
+      self.put_excavation_squares_window.show()  
+
+    def deletePolygonBtn(self, arg):
+      pass
