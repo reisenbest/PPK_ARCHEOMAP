@@ -11,6 +11,11 @@ from PyQt5.QtWidgets import QWidget, QDialog
 #   arg
 
 
+class UtilsForDataBase:
+    def __init__(self):
+      pass
+
+
 class UtilsForViews:
     def __init__(self):
       pass

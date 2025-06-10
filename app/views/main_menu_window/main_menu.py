@@ -45,6 +45,7 @@ class MainMenuController(QObject):  # Наследуем от QObject для р�
 
     def show(self):
         self.view.show()
+        self.test()
 
     @pyqtSlot()  # Здесь все правильно: слот для выхода
     def exit_app(self):
@@ -64,3 +65,13 @@ class MainMenuController(QObject):  # Наследуем от QObject для р�
     def open_monuments_list_window(self):
         self.monuments_list_controller = MonumentListController(db_manager=self.db_manager)
         self.monuments_list_controller.show()
+
+    
+    def test(self):
+        print('test')
+        x = UnionDataBaseManagerController()
+        y = x.monuments_table.get_monuments()
+        # print(y)
+
+
+

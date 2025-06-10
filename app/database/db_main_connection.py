@@ -2,7 +2,7 @@ from typing import List, Dict, Union
 from PyQt5.QtSql import QSqlError
 from PyQt5.QtSql import QSqlDatabase, QSqlQuery
 from typing import List, Dict
-import config
+
 from database.db_validate import ValidateSQLLevelManager
 from database.db_queries import DataBaseQueries
 import sys
@@ -10,7 +10,9 @@ import os
 # TODO сделать одну точку входа базы данных при входе в приложение открывается коннект и им все пользуются
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-    
+import config
+
+
 class DataBaseManager:
     '''
     Базовый Класс для работы с БД SQLite через QtSql.
@@ -51,7 +53,29 @@ class DataBaseManager:
                 query.addBindValue(value)
         if not query.exec():
             raise Exception(error_msg or query.lastError().text())
-        return query
+        return query 
+    
+    def _parse_query_result(self, query_obj, required_field: str = None) -> list[dict]:
+        results = []
+        record = query_obj.record()
+        columns_count = record.count()
+        columns_names = [record.fieldName(i) for i in range(columns_count)]
+
+        while query_obj.next():
+            if required_field:
+                required_value = query_obj.value(required_field)
+                if not required_value:
+                    continue  # пропускаем строки без обязательного поля
+
+            entry_dict = {}
+            for name in columns_names:
+                entry_dict[name] = query_obj.value(name)
+            results.append(entry_dict)
+
+        return results
+               
+               
+  
 
     def get_info_about_table(self, table_name: str):
         # Создаём объект запроса, используя подключение к базе
@@ -120,7 +144,7 @@ class DataBaseMonumentsTableManager:
                 # Инициализируем памятник с координатами сразу
                 latitude = query.value("latitude")
                 longitude = query.value("longitude")
-                note = query.value("note")
+                note = query.value("note") 
 
                 monuments[monument_id] = {
                     "monument_id": monument_id,
@@ -131,20 +155,27 @@ class DataBaseMonumentsTableManager:
                     "longitude": longitude,
                     "note": note,
                     "files": [],
-                    # 'excavation_square': [],
+                    'excavation_squares': [],
 
                 }
-      
-        # Добавляем файл, если он есть
-            file_path = query.value("file_path")
-            if file_path:
-                file_entry = {
-                    "file_path": file_path,
-                    "file_type": query.value("file_type"),
-                    "file_description": query.value("file_description")
-                }
-                if file_entry not in monuments[monument_id]["files"]:
-                    monuments[monument_id]["files"].append(file_entry)
+
+                get_files_query = self.db_manager_common._execute_query(self.db_queries.get_files_by_monument_id_query(),
+                                               [monument_id,],
+                                               error_msg='error with get files  by monuument id')
+                files = self.db_manager_common._parse_query_result(get_files_query, 'file_path')
+                if files not in monuments[monument_id]["files"]:
+                    monuments[monument_id]["files"].append(files) 
+
+                excavation_squares_query = self.db_manager_common._execute_query(self.db_queries.get_excavation_squares_by_monument_id_query(),
+                                               [monument_id,],
+                                               error_msg='error with get excavation_squares  by monuument id')
+                
+                excavation_squares = self.db_manager_common._parse_query_result(excavation_squares_query, 'geometry')
+                if excavation_squares not in monuments[monument_id]["excavation_squares"]:
+                    monuments[monument_id]["excavation_squares"].append(excavation_squares) 
+                print('kekekeke', excavation_squares)
+
+
         print(list(monuments.values()))
         return list(monuments.values())
 
@@ -181,30 +212,9 @@ class DataBaseMonumentsTableManager:
                 [monument_id,],
                 error_msg=f'ошибка при получении excavation squares, связанных с памятником {monument_id}'
             )
-
-
-            #TODO:L сделать изящнее и короче этоткод
-            files = []
-            excavation_squares = []
-            while files_query.next():
-                files.append({
-                    "file_id": files_query.value("file_id"),
-                    "file_path": files_query.value("file_path"),
-                    "file_type": files_query.value("file_type"),
-                    "file_description": files_query.value("file_description"),
-                    "monument_id": files_query.value("monument_id")
-                })
-
-            while excavation_squares_query.next():
-                excavation_squares.append({
-                    "square_id": excavation_squares_query.value("square_id"),
-                    "geometry": excavation_squares_query.value("geometry"),
-                    "geom_description": excavation_squares_query.value("geom_description"),
-                    "monument_id": excavation_squares_query.value("monument_id"),
-                })
-
-
-          
+            
+            files = self.db_manager_common._parse_query_result(files_query, 'file_path')
+            excavation_squares = self.db_manager_common._parse_query_result(excavation_squares_query, 'geometry')
 
             record["files"] = files
             record["excavation_squares"] = excavation_squares
@@ -383,16 +393,9 @@ class DataBaseFilesTableManager:
         Получить список файлов, связанных с памятником по его ID
         """
         query = self.db_manager_common._execute_query(self.db_queries.get_files_for_monument_by_monument_id(), [monument_id], error_msg=f"Ошибка при получении файлов для памятника {monument_id}")
-        files = []
-        while query.next():
-            files.append({
-                "file_id": query.value("file_id"),
-                "file_path": query.value("file_path"),
-                "file_type": query.value("file_type"),
-                "file_description": query.value("file_description")
-            })
-        
+        files = self.db_manager_common._parse_query_result(query, 'file_path')
         return files
+
     
     def update_file_paths(self, file_id: int, new_path: str) -> None:
         """
@@ -416,7 +419,7 @@ class UnionDataBaseManagerController:
         self.files_table = DataBaseFilesTableManager(self.db_common, self.db_queries)
         self.coordinates_table = DataBaseCoordinateTableManager(self.db_common, self.db_queries)
         self.monuments_table = DataBaseMonumentsTableManager(self.db_common, self.db_queries)
-        
+    
 
 
 # TODO  НАПИСАТЬ В БД КЛАССЕ МЕТОДЫ КРУД И СЕРИАЛИЗАТОРЫ А В КЛАССАХ ИХ ИМПОРТИРОВАТЬ И ВЫЗЫВАТЬ!
