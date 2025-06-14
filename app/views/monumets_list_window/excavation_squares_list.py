@@ -4,7 +4,7 @@ from PyQt5.QtWidgets import QDialog
 from PyQt5.QtCore import QObject
 from PyQt5.uic import loadUi
 from utils.base_classes import BaseView
-from views.monumets_list_window.put_excavation_squares import PutExcavationSquaresController
+from app.views.monumets_list_window.excavation_squares_manage import PutExcavationSquaresController
 import config
 
 
@@ -26,7 +26,7 @@ class ExcavationSquaresListController(QObject):
     def setup_connections(self):                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            
         self.view.addPolygonBtn.clicked.connect(self.put_polygon)
         self.view.deletePolygonBtn.clicked.connect(self.deletePolygonBtn)
-
+                                                      
         
     def show(self):
         self.view.show()

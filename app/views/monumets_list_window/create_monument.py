@@ -14,7 +14,8 @@ from utils.base_classes import BaseView
 from utils.validate_manager import ValidateUILevelManager
 from utils.utils import UtilsForViews
 from views.monumets_list_window.excavation_squares_list import ExcavationSquaresListController
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..')))
+sys.path.append(os.path.abspath(os.path.join(
+    os.path.dirname(__file__), '..', '..', '..')))
 
 
 class CreateMonumentView(QDialog, BaseView):
@@ -28,12 +29,13 @@ class CreateMonumentView(QDialog, BaseView):
         research_object_placeholder = table_info['research_object']['name']
 
         print('table info', table_info)
-        
+
         self.nameInsert.setPlaceholderText(name_placeholder)
         self.descriptionInsert.setPlaceholderText(description_placeholder)
-        self.resObjInsert.setPlaceholderText(json.dumps(table_info['research_object']))
+        self.resObjInsert.setPlaceholderText(
+            json.dumps(table_info['research_object']))
         self.filePathInsert.setPlaceholderText('file_path_placeholder')
-    
+
 
 class CreateMonumentController(QObject):
 
@@ -57,11 +59,13 @@ class CreateMonumentController(QObject):
         # Подключаем действия к кнопкам
         self.view.createBtn.clicked.connect(self.create_monument)
         self.view.cancelBtn.clicked.connect(self.cancel_create)  # Обработчик кнопки "Отмена
-        self.view.browseBtn.clicked.connect(self.browse_file) # загрузить файл
-        self.view.ExcavationSqrBtn.clicked.connect(self.excavation_squares_list_dialog) # загрузить поворотные точки раскопов 
+        self.view.browseBtn.clicked.connect(self.browse_file)  # загрузить файл
+        self.view.ExcavationSqrBtn.clicked.connect(self.excavation_squares_list_dialog)  # загрузить поворотные точки раскопов
+
     @pyqtSlot()
     def set_placeholders(self):
-        table_info = self.db_manager.db_common.get_info_about_table('Monuments')
+        table_info = self.db_manager.db_common.get_info_about_table(
+            'Monuments')
         placeholders = {}
 
         for col in table_info:
@@ -69,7 +73,6 @@ class CreateMonumentController(QObject):
 
         self.view.buttons_placeholders(placeholders)
 
-    
     @pyqtSlot()
     def cancel_create(self):
         """Отмена изменение. Просто закрыть окно."""
@@ -77,6 +80,7 @@ class CreateMonumentController(QObject):
 
     @pyqtSlot()
     def browse_file(self):
+        #FIXME: если нажать на кноку выбрать файл а потом нажать отмену - выдает ошибку
         file_data = self.utils.browse_file_in_file_system(view_obj=self.view)
 
         self.selected_files.append({
@@ -88,7 +92,7 @@ class CreateMonumentController(QObject):
         # Обновить поле отображения файлов
         filenames = [os.path.basename(f['path']) for f in self.selected_files]
         self.view.filePathInsert.setText("; ".join(filenames))
-    
+
     @pyqtSlot()
     def create_monument(self):
         raw_name = self.view.nameInsert.text().strip()
@@ -102,7 +106,7 @@ class CreateMonumentController(QObject):
 
         # Скопировать файл
         files_data = []
-        #TODO 
+        # TODO
         # FIXME: Внутри все сделано так, как будто при создании памятника доступен множественный выбор файлов
         files_data = self.utils.copy_selected_files_to_monument_folder(view_obj=self.view,
                                                                        selected_files=self.selected_files,
@@ -126,21 +130,23 @@ class CreateMonumentController(QObject):
             data_to_insert['files'] = files_data
 
         # --- ВАЛИДАЦИЯ ---
-        is_valid, error_msg = self.validator.validate_create_method(data_to_insert)
+        is_valid, error_msg = self.validator.validate_create_method(
+            data_to_insert)
         if not is_valid:
-            QMessageBox.warning(self.view, "Ошибка валидации на уровне UI", error_msg)
+            QMessageBox.warning(
+                self.view, "Ошибка валидации на уровне UI", error_msg)
             return
 
         # --- СОЗДАНИЕ ---
         try:
-            success = self.db_manager.monuments_table.create_monument(data=data_to_insert)
+            success = self.db_manager.monuments_table.create_monument(
+                data=data_to_insert)
             if success:
                 self.view.accept()
         except Exception as e:
-            QMessageBox.warning(self.view, "Ошибка при создании памятника", str(e))
-            
+            QMessageBox.warning(
+                self.view, "Ошибка при создании памятника", str(e))
 
     def excavation_squares_list_dialog(self):
-        self.excavation_squares_list_dialog.view.exec_()  # вызываем exec_() на объекте QDialog
-
-    
+        # вызываем exec_() на объекте QDialog
+        self.excavation_squares_list_dialog.view.exec_()

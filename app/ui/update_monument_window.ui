@@ -212,6 +212,19 @@
     <string>add|delete files</string>
    </property>
   </widget>
+  <widget class="QPushButton" name="ExcavationSqrBtn">
+   <property name="geometry">
+    <rect>
+     <x>750</x>
+     <y>380</y>
+     <width>171</width>
+     <height>61</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>add excavation square</string>
+   </property>
+  </widget>
  </widget>
  <resources/>
  <connections/>

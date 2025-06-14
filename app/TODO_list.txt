@@ -28,3 +28,18 @@ QInputDialog из browse_file create monumetn вынести отдельно т
 
 
 ПЕРЕДЕЛАТЬ В ГЕОДЖСОН И КООРДИНАТЫ ОБЫЧНЫЕ ТОЧЕК РАСКОПОВ
+
+
+#FIXME: если нажать на кноку выбрать файл а потом нажать отмену - выдает ошибку. так везде при нажатии на browse file
+Traceback (most recent call last):
+  File "c:\Users\Aleksey\Desktop\Programmatura computatralis\PPK_ARCHEOMAP\app\views\monumets_list_window\manage_files.py", line 85, in browse_file
+    original_filename = os.path.basename(file_data['path'])
+                                         ~~~~~~~~~^^^^^^^^
+TypeError: 'NoneType' object is not subscriptable
+
+
+
+валидатор для окна с добавленеим полигонов
+
+нельзя сохранить полигон если меньше 3 ТОЧЕК
+ограничения для полей широты и долготы 

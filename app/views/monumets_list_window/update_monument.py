@@ -10,6 +10,8 @@ from utils.utils import UtilsForViews
 from utils.validate_manager import ValidateUILevelManager
 from views.monumets_list_window.manage_files import ManageFilesController
 import shutil
+from views.monumets_list_window.excavation_squares_list import ExcavationSquaresListController
+
 
 sys.path.append(os.path.abspath(os.path.join(
     os.path.dirname(__file__), '..', '..', '..')))
@@ -45,6 +47,7 @@ class UpdateMonumentController(QObject):
             parent=self.view
         )
         self.utils = UtilsForViews()
+        self.excavation_squares_list_dialog = ExcavationSquaresListController()
 
     def show(self):
         self.view.show()
@@ -54,7 +57,7 @@ class UpdateMonumentController(QObject):
         self.view.acceptUpdBtn.clicked.connect(self.update_monument)
         self.view.cancelBtn.clicked.connect(self.cancel_delete)
         self.view.addDelFilesBtn.clicked.connect(self.manage_files)
-
+        self.view.ExcavationSqrBtn.clicked.connect(self.excavation_squares_list_dialog)  # загрузить поворотные точки раскопов
     @pyqtSlot()
     def cancel_delete(self):
         """Отмена изменения. Просто закрыть окно."""
@@ -144,3 +147,8 @@ class UpdateMonumentController(QObject):
             except Exception as e:
                 print(
                     f"Ошибка обновления пути в БД для файла ID {file_instance['file_id']}: {e}")
+                
+
+    def excavation_squares_list_dialog(self):
+        # вызываем exec_() на объекте QDialog
+        self.excavation_squares_list_dialog.view.exec_()

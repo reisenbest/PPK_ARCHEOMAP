@@ -22,10 +22,15 @@
     </widget>
    </item>
    <item>
-    <widget class="QListWidget" name="pointsList">
-     <property name="selectionMode">
-      <enum>QAbstractItemView::SingleSelection</enum>
+    <widget class="QTableWidget" name="pointsList">
+     <property name="rowCount">
+      <number>0</number>
      </property>
+     <property name="columnCount">
+      <number>2</number>
+     </property>
+     <column/>
+     <column/>
     </widget>
    </item>
    <item>
@@ -36,7 +41,7 @@
         <string>Add Point</string>
        </property>
        <property name="icon">
-        <iconset resource="../resources.qrc">
+        <iconset>
          <normaloff>:/icons/add.png</normaloff>:/icons/add.png</iconset>
        </property>
       </widget>
@@ -47,8 +52,17 @@
         <string>Remove Point</string>
        </property>
        <property name="icon">
-        <iconset resource="../resources.qrc">
+        <iconset>
          <normaloff>:/icons/remove.png</normaloff>:/icons/remove.png</iconset>
+       </property>
+       <property name="autoDefault">
+        <bool>true</bool>
+       </property>
+       <property name="default">
+        <bool>false</bool>
+       </property>
+       <property name="flat">
+        <bool>false</bool>
        </property>
       </widget>
      </item>
@@ -58,7 +72,7 @@
         <string>Move Up</string>
        </property>
        <property name="icon">
-        <iconset resource="../resources.qrc">
+        <iconset>
          <normaloff>:/icons/up.png</normaloff>:/icons/up.png</iconset>
        </property>
       </widget>
@@ -69,7 +83,7 @@
         <string>Move Down</string>
        </property>
        <property name="icon">
-        <iconset resource="../resources.qrc">
+        <iconset>
          <normaloff>:/icons/down.png</normaloff>:/icons/down.png</iconset>
        </property>
       </widget>
@@ -95,10 +109,10 @@
          <number>8</number>
         </property>
         <property name="minimum">
-         <double>-90.0</double>
+         <double>-90.000000000000000</double>
         </property>
         <property name="maximum">
-         <double>90.0</double>
+         <double>90.000000000000000</double>
         </property>
        </widget>
       </item>
@@ -115,10 +129,10 @@
          <number>8</number>
         </property>
         <property name="minimum">
-         <double>-180.0</double>
+         <double>-180.000000000000000</double>
         </property>
         <property name="maximum">
-         <double>180.0</double>
+         <double>180.000000000000000</double>
         </property>
        </widget>
       </item>
