@@ -199,6 +199,13 @@ class DataBaseQueries:
     def delete_excavation_square_by_id():
         return '''DELETE FROM ExcavationSquares WHERE square_id = ?'''
     
+    @staticmethod
+    def create_excavation_square_by_monument_id():
+        return"""
+            INSERT INTO ExcavationSquares (geometry, geom_description, monument_id)
+            VALUES (?, ?, ?)
+            """
+
     # @staticmethod
     # def insert_file():
     #     return '''
@@ -210,3 +217,6 @@ class DataBaseQueries:
     #     return '''
     #         UPDATE files SET file_path = ? WHERE file_id = ?
     #     '''
+
+
+    

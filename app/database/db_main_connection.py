@@ -339,6 +339,7 @@ class DataBaseMonumentsTableManager:
                                     )
 
         return True
+        
     def delete_monument_by_id(self, monument_id: int):
         """Удалить памятник по ID."""
         validator = ValidateSQLLevelManager(
@@ -403,6 +404,43 @@ class DataBaseFilesTableManager:
         """
         self.db_manager_common._execute_query(self.db_queries.update_file_paths_query(), [new_path, file_id], error_msg=f"Не удалось обновить путь файла ID {file_id}")
 
+
+class DataBaseExcavationSquaresManager:
+    """docstring for DataBaseExcavationSquaresManager."""
+    def __init__(self, db_manager: DataBaseManager, db_queries):
+        self.db = db_manager.db
+        self.db_queries = db_queries
+        self.db_manager_common = db_manager
+
+    def get_all_excavation_squares(self):
+        pass
+
+    def get_excavation_squares_list_by_monument_id(self, monument_id):
+        query = self.db_manager_common._execute_query(query_str=self.db_queries.get_excavation_squares_for_monument_by_monument_id(),
+                                              values=[monument_id,],
+                                              error_msg='ошибка при получении полигонов для выбранного памятника')
+        
+        polygons = self.db_manager_common._parse_query_result(query_obj=query, required_field='geometry')
+
+        return polygons
+        
+
+    def get_excavation_squares_by_own_id(self, excavation_square_id):
+        pass
+    
+    def update_excavation_squares_by_monument_id(self, monument_id, excavation_square_id):
+        pass
+
+    def create_excavation_squares_by_monument_id(self, data: dict):
+        self.db_manager_common._execute_query(query_str=self.db_queries.create_excavation_square_by_monument_id(),
+                                              values=[data['geometry'], data['geom_description'], data['monument_id']],
+                                              error_msg='ошибка при сохранении площади раскопок')
+        
+        
+
+    def delete_excavation_squares_by_monument_id(self, monument_id):
+        pass
+
 class DataBaseCoordinateTableManager:
     
     def __init__(self, db_manager: DataBaseManager, db_queries):
@@ -419,6 +457,7 @@ class UnionDataBaseManagerController:
         self.files_table = DataBaseFilesTableManager(self.db_common, self.db_queries)
         self.coordinates_table = DataBaseCoordinateTableManager(self.db_common, self.db_queries)
         self.monuments_table = DataBaseMonumentsTableManager(self.db_common, self.db_queries)
+        self.excavation_squares_table = DataBaseExcavationSquaresManager(self.db_common, self.db_queries)
     
 
 

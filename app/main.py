@@ -2,7 +2,8 @@ import sys
 from PyQt5.QtWidgets import QApplication
 from views.main_menu_window.main_menu import MainMenuController
 from database.db_main_connection import UnionDataBaseManagerController
-
+from PyQt5.QtCore import Qt
+from PyQt5.QtWidgets import QTableWidgetItem
 
 def main():
     app = QApplication(sys.argv)

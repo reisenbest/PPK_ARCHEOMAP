@@ -15,7 +15,7 @@
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
    <item>
-    <widget class="QTableView" name="filesTableView"/>
+    <widget class="QTableView" name="polygonsTableView"/>
    </item>
    <item>
     <layout class="QHBoxLayout" name="buttonLayout">
