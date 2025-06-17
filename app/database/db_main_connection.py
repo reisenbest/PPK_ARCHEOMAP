@@ -134,7 +134,7 @@ class DataBaseMonumentsTableManager:
         self.db_manager_common = db_manager
 
     def get_monuments(self):
-        query = QSqlQuery(self.db_queries.get_monuments(), self.db)
+        query = QSqlQuery(self.db_queries.get_monuments_query(), self.db)
         monuments = {}
 
         while query.next():
@@ -247,7 +247,7 @@ class DataBaseMonumentsTableManager:
 
         # --- Вставка памятника ---
         #prepare + bind + exec (подготовка скл запроса, подстановка параметров, запрос)
-        query = self.db_manager_common._execute_query(self.db_queries.create_monument(),
+        query = self.db_manager_common._execute_query(self.db_queries.create_monument_query(),
                                                [monument_data.get('name'), monument_data.get('description'), monument_data.get('research_object')],
                                                error_msg='ошибка при создании памятника')
         monument_id = query.lastInsertId()
@@ -257,7 +257,7 @@ class DataBaseMonumentsTableManager:
             fields_clause = ", ".join(coord_data.keys()) + ", monument_id"
             placeholders = ", ".join(["?"] * len(coord_data)) + ", ?"
             
-            query_str = self.db_queries.create_coordinate(fields_clause, placeholders)
+            query_str = self.db_queries.create_coordinate_query(fields_clause, placeholders)
             bind_values = list(coord_data.values()) + [monument_id]  # Собираем все значения для подстановки
             
             self.db_manager_common._execute_query(query_str, bind_values, error_msg=f"Ошибка при добавлении координат")
@@ -271,7 +271,7 @@ class DataBaseMonumentsTableManager:
             if not file_path:
                 continue  # обязательное поле
 
-            self.db_manager_common._execute_query(self.db_queries.create_file(), [file_path, file_type, file_description, monument_id])
+            self.db_manager_common._execute_query(self.db_queries.create_file_query(), [file_path, file_type, file_description, monument_id])
 
         return True
 
@@ -301,7 +301,7 @@ class DataBaseMonumentsTableManager:
             set_clause = ", ".join(set_parts)
             values = list(monument_data.values()) + [monument_id]
 
-            self.db_manager_common._execute_query(self.db_queries.update_monument_by_id(set_clause=set_clause),
+            self.db_manager_common._execute_query(self.db_queries.update_monument_by_id_query(set_clause=set_clause),
                                 values,
                                 error_msg="Ошибка при обновлении Monuments"
                                 )
@@ -310,7 +310,7 @@ class DataBaseMonumentsTableManager:
         if coord_data:
             # Проверка существования координат
             check_query = self.db_manager_common._execute_query(
-                self.db_queries.get_coordinate_by_monument_id(),
+                self.db_queries.get_coordinate_by_monument_id_query(),
                 [monument_id],
                 error_msg="Ошибка при проверке координат"
             )
@@ -324,7 +324,7 @@ class DataBaseMonumentsTableManager:
 
             if coord_exists:
                 # Обновление существующих координат
-                self.db_manager_common._execute_query(self.db_queries.update_coordinate_by_monument_id(set_clause=set_clause),
+                self.db_manager_common._execute_query(self.db_queries.update_coordinate_by_monument_id_query(set_clause=set_clause),
                                     values + [monument_id],
                                     error_msg="Ошибка при обновлении Coordinates"
                                     )
@@ -333,7 +333,7 @@ class DataBaseMonumentsTableManager:
                 fields_clause = ", ".join(coord_data.keys()) + ", monument_id"
                 placeholders = ", ".join(["?"] * len(coord_data)) + ", ?"
                 
-                self.db_manager_common._execute_query(self.db_queries.create_coordinate_by_monument_id(fields_clause=fields_clause, placeholders=placeholders),
+                self.db_manager_common._execute_query(self.db_queries.create_coordinate_by_monument_id_query(fields_clause=fields_clause, placeholders=placeholders),
                                     values + [monument_id],
                                     error_msg="Ошибка при добавлении Coordinates"
                                     )
@@ -349,7 +349,7 @@ class DataBaseMonumentsTableManager:
             # Возвращаем или выбрасываем ошибку, чтобы контроллер мог её обработать
             raise Exception(error_msg)
         
-        self.db_manager_common._execute_query(self.db_queries.delete_monument_by_id(), [monument_id], error_msg="Ошибка при удалении памятника sql запрос")
+        self.db_manager_common._execute_query(self.db_queries.delete_monument_by_id_query(), [monument_id], error_msg="Ошибка при удалении памятника sql запрос")
 
         return True  # возвращается True если все успешно. Это тру потом используется при CRUD операциях, при обработке ошибок и обновлении окна со списоком памятников после CRUD операций
 
@@ -364,7 +364,7 @@ class DataBaseFilesTableManager:
     def delete_file_by_id(self, file_id: int) -> None:
         # Проверяем есть ли файл
         query = self.db_manager_common._execute_query(
-            self.db_queries.get_file_path_by_id(),
+            self.db_queries.get_file_path_by_id_query(),
             [file_id],
             error_msg=f"Файл с ID {file_id} не найден."
         )
@@ -378,14 +378,14 @@ class DataBaseFilesTableManager:
                 raise Exception(f"Не удалось удалить файл: {file_path} — {e}")
             
         # Удаляем из базы путь
-        self.db_manager_common._execute_query(self.db_queries.delete_file_by_id(),[file_id], error_msg=f"Ошибка при удалении файла с ID {file_id} из базы данных")    
+        self.db_manager_common._execute_query(self.db_queries.delete_file_by_id_query(),[file_id], error_msg=f"Ошибка при удалении файла с ID {file_id} из базы данных")    
 
 
     def add_file(self, file_path: str, file_type: str, description: str, monument_id: int) -> None:
         """
         Добавить файл в базу данных
         """
-        self.db_manager_common._execute_query(self.db_queries.insert_file(), 
+        self.db_manager_common._execute_query(self.db_queries.insert_file_query(), 
                             [file_path, file_type.strip(), description.strip(), monument_id],
                             error_msg=f"Ошибка добавления файла в БД")
 
@@ -393,7 +393,7 @@ class DataBaseFilesTableManager:
         """
         Получить список файлов, связанных с памятником по его ID
         """
-        query = self.db_manager_common._execute_query(self.db_queries.get_files_for_monument_by_monument_id(), [monument_id], error_msg=f"Ошибка при получении файлов для памятника {monument_id}")
+        query = self.db_manager_common._execute_query(self.db_queries.get_files_for_monument_by_monument_id_query(), [monument_id], error_msg=f"Ошибка при получении файлов для памятника {monument_id}")
         files = self.db_manager_common._parse_query_result(query, 'file_path')
         return files
 
@@ -413,10 +413,19 @@ class DataBaseExcavationSquaresManager:
         self.db_manager_common = db_manager
 
     def get_all_excavation_squares(self):
-        pass
+        """
+        для кнопки отображения полигонов (раскопов) известных в крепости
+        """
+        query = self.db_manager_common._execute_query(query_str=self.db_queries.get_all_excavation_squares_query(),
+                                              error_msg='ошибка при получении всех полигонов sql')
+        
+        polygons = self.db_manager_common._parse_query_result(query_obj=query, required_field='geometry')
+
+        return polygons
+        
 
     def get_excavation_squares_list_by_monument_id(self, monument_id):
-        query = self.db_manager_common._execute_query(query_str=self.db_queries.get_excavation_squares_for_monument_by_monument_id(),
+        query = self.db_manager_common._execute_query(query_str=self.db_queries.get_excavation_squares_for_monument_by_monument_id_query(),
                                               values=[monument_id,],
                                               error_msg='ошибка при получении полигонов для выбранного памятника')
         
@@ -425,21 +434,55 @@ class DataBaseExcavationSquaresManager:
         return polygons
         
 
-    def get_excavation_squares_by_own_id(self, excavation_square_id):
+    def get_excavation_square_by_own_id(self, excavation_square_id):
         pass
     
-    def update_excavation_squares_by_monument_id(self, monument_id, excavation_square_id):
-        pass
+    def update_excavation_square_by_id(self, square_id: int, square_data: dict):
+        """
+        Обновить полигон ExcavationSquare по square_id.
+        Допускается обновление только полей: geom_description и geometry.
+        """
+        if not square_data:
+            return
 
+        allowed_fields = {"geom_description", "geometry"}
+        update_data = {k: v for k, v in square_data.items() if k in allowed_fields}
+
+        if not update_data:
+            raise Exception("Нет допустимых полей для обновления.")
+
+        # Валидация (если у вас есть отдельный валидатор, его можно подключить здесь)
+        # validator = ValidateSQLLevelManager(...)
+        # is_valid, error_msg = validator.validate_update_excavation_square()
+        # if not is_valid:
+        #     raise Exception(error_msg)
+
+        set_parts = [f"{key} = ?" for key in update_data.keys()]
+        set_clause = ", ".join(set_parts)
+        values = list(update_data.values()) + [square_id]
+
+        self.db_manager_common._execute_query(
+            self.db_queries.update_excavation_square_by_square_id_query(set_clause),
+            values,
+            error_msg="Ошибка при обновлении ExcavationSquares"
+        )
+
+        return True
+    
+
+
+    
     def create_excavation_squares_by_monument_id(self, data: dict):
-        self.db_manager_common._execute_query(query_str=self.db_queries.create_excavation_square_by_monument_id(),
+        self.db_manager_common._execute_query(query_str=self.db_queries.create_excavation_square_by_monument_id_query(),
                                               values=[data['geometry'], data['geom_description'], data['monument_id']],
                                               error_msg='ошибка при сохранении площади раскопок')
         
         
 
-    def delete_excavation_squares_by_monument_id(self, monument_id):
-        pass
+    def delete_excavation_square_by_own_id(self, square_id):
+        self.db_manager_common._execute_query(query_str=self.db_queries.delete_excavation_square_by_id_query(),
+                                              values=[square_id,],
+                                              error_msg='ошибка при удалении полигона sql')
 
 class DataBaseCoordinateTableManager:
     

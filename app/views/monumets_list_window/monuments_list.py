@@ -21,7 +21,7 @@ class MonumentListView(QWidget, BaseView):
 
         # Используем QSqlQueryModel для JOIN-запроса
         self.model = QSqlQueryModel(self)
-        self.model.setQuery(self.db_query.create_monument_list_view())
+        self.model.setQuery(self.db_query.create_monument_list_view_query())
 
         self.monumentsTableView.setModel(self.model)
         self.monumentsTableView.resizeColumnsToContents()
@@ -106,7 +106,7 @@ class MonumentListController(QObject):
 
     @pyqtSlot()
     def refresh_data(self):
-        query_text = self.db_manager.db_queries.get_monuments()
+        query_text = self.db_manager.db_queries.get_monuments_query()
         self.view.model.setQuery(query_text, self.db_manager.db_common.db)
         self.update_buttons_state(False)
         self.current_monument_id = None

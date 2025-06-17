@@ -14,7 +14,7 @@ def main():
     # Передаём менеджер контроллеру
     controller = MainMenuController(db_manager=db_manager)
     controller.show()
-
+    
     exit_code = app.exec_()
 
     # Закрываем соединение при завершении

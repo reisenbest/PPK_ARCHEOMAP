@@ -3,7 +3,9 @@ from PyQt5.QtWidgets import QFileDialog, QInputDialog, QMessageBox
 import config
 import shutil
 from PyQt5.QtWidgets import QWidget, QDialog
-
+from PyQt5.QtWidgets import QTableWidgetItem
+from PyQt5.QtWidgets import QAbstractItemView
+from PyQt5.QtCore import Qt
 # class UtilsForViews(object):
 #   """docstring for UtilsForViews."""
 #   def __init__(self, arg):
@@ -17,8 +19,8 @@ class UtilsForDataBase:
 
 
 class UtilsForViews:
-    def __init__(self):
-      pass
+    def __init__(self, view=None):
+        self.view = view
 
     def browse_file_in_file_system(self, view_obj):
         '''
@@ -203,3 +205,53 @@ class UtilsForViews:
             content += "<h2>Файлы</h2><p>Нет поворотные точки</p>"
 
         return content
+    
+    def set_coordinate_to_point_list(self, view_obj, row, lat, lon):
+
+        item_lat = QTableWidgetItem(f"{lat:.6f}")
+        item_lat.setFlags(item_lat.flags() & ~Qt.ItemIsEditable)
+        # Создаём элемент таблицы для широты, форматируем до 6 знаков после запятой.
+        # Делаем ячейку нередактируемой пользователем.
+
+        item_lon = QTableWidgetItem(f"{lon:.6f}")
+        item_lon.setFlags(item_lon.flags() & ~Qt.ItemIsEditable)
+        # Аналогично создаём и настраиваем ячейку для долготы.
+
+        view_obj.pointsList.setItem(row, 0, item_lat)
+        view_obj.pointsList.setItem(row, 1, item_lon)
+        # Устанавливаем созданные элементы (широту и долготу) в соответствующие ячейки строки `row`.
+
+    def move_point(self, view_obj, move_up: bool):
+        '''
+        если move_up = True, то ввеох поднимаем точку, 
+        если move_up = False - вниз опускаем
+        '''
+        current_row = view_obj.pointsList.currentRow()
+        if current_row == -1:
+            return  # Ничего не выбрано
+
+        target_row = current_row - 1 if move_up else current_row + 1
+
+        if target_row < 0 or target_row >= view_obj.pointsList.rowCount():
+            return  # Выход за границы
+
+        # Сохраняем данные
+        lat_current = view_obj.pointsList.item(current_row, 0).text()
+        lon_current = view_obj.pointsList.item(current_row, 1).text()
+
+        lat_target = view_obj.pointsList.item(target_row, 0).text()
+        lon_target = view_obj.pointsList.item(target_row, 1).text()
+
+        # Меняем строки местами
+        view_obj.pointsList.item(current_row, 0).setText(lat_target)
+        view_obj.pointsList.item(current_row, 1).setText(lon_target)
+
+        view_obj.pointsList.item(target_row, 0).setText(lat_current)
+        view_obj.pointsList.item(target_row, 1).setText(lon_current)
+
+        # Перемещаем выделение
+        view_obj.pointsList.selectRow(target_row)
+
+
+    
+

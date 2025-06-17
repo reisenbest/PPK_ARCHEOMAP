@@ -292,19 +292,6 @@ font-size: 11px;</string>
     <string>browse...</string>
    </property>
   </widget>
-  <widget class="QPushButton" name="ExcavationSqrBtn">
-   <property name="geometry">
-    <rect>
-     <x>660</x>
-     <y>340</y>
-     <width>171</width>
-     <height>61</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string>add excavation square</string>
-   </property>
-  </widget>
  </widget>
  <resources/>
  <connections/>

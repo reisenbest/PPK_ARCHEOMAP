@@ -8,7 +8,7 @@ class DataBaseQueries:
         pass
 
     @staticmethod
-    def get_monuments():
+    def get_monuments_query():
         return """
             SELECT 
                 m.monument_id,
@@ -66,35 +66,35 @@ class DataBaseQueries:
 
 
     @staticmethod
-    def create_monument():
+    def create_monument_query():
         return """
             INSERT INTO Monuments (name, description, research_object)
             VALUES (?, ?, ?)
         """
 
     @staticmethod
-    def create_coordinate(fields_clause: str, placeholders: str):
+    def create_coordinate_query(fields_clause: str, placeholders: str):
         return f"""
             INSERT INTO Coordinates ({fields_clause})
             VALUES ({placeholders})
         """
     
     @staticmethod
-    def create_file():
+    def create_file_query():
         return """
             INSERT INTO Files (file_path, file_type, file_description, monument_id)
             VALUES (?, ?, ?, ?)
         """
     
     @staticmethod
-    def create_excavation_square():
+    def create_excavation_square_query():
         return """
             INSERT INTO ExcavationSquares (geometry, geom_description, monument_id)
             VALUES (?, ?, ?, ?)
         """
 
     @staticmethod
-    def update_monument_by_id(set_clause):
+    def update_monument_by_id_query(set_clause):
     
         return f"""
                 UPDATE Monuments
@@ -103,7 +103,7 @@ class DataBaseQueries:
               """
     #FIXME: два одинаковых метода, оставить один
     @staticmethod
-    def get_coordinate_by_monument_id():
+    def get_coordinate_by_monument_id_query():
         return """
             SELECT latitude, longitude, note
             FROM Coordinates
@@ -111,14 +111,14 @@ class DataBaseQueries:
         """
 
     @staticmethod
-    def get_coordinate_by_monument_id():
+    def get_coordinate_by_monument_id_query():
         
         return  """
                 SELECT coord_id FROM Coordinates WHERE monument_id = ?
                 """
     
     @staticmethod
-    def update_coordinate_by_monument_id(set_clause):
+    def update_coordinate_by_monument_id_query(set_clause):
         
         return  f"""
                     UPDATE Coordinates
@@ -127,7 +127,7 @@ class DataBaseQueries:
                 """
     
     @staticmethod
-    def create_coordinate_by_monument_id(fields_clause, placeholders):
+    def create_coordinate_by_monument_id_query(fields_clause, placeholders):
         
         return  f"""
                     INSERT INTO Coordinates ({fields_clause})
@@ -135,13 +135,13 @@ class DataBaseQueries:
                 """
 
     @staticmethod
-    def delete_monument_by_id():
+    def delete_monument_by_id_query():
         return  """
                 DELETE FROM Monuments WHERE monument_id = ?
                 """
     
     @staticmethod
-    def create_monument_list_view():
+    def create_monument_list_view_query():
         """Возвращает SQL-запрос для отображения данных из БД в окне monument_list в табличном виде."""
         return """
             SELECT 
@@ -157,21 +157,21 @@ class DataBaseQueries:
             """
     
     @staticmethod
-    def get_files_for_monument_by_monument_id():
+    def get_files_for_monument_by_monument_id_query():
         return """
         SELECT file_id, file_path, file_type, file_description 
         FROM Files 
         WHERE monument_id = ?
         """
     @staticmethod
-    def get_file_path_by_id():
+    def get_file_path_by_id_query():
         return '''SELECT file_path FROM Files WHERE file_id = ?'''
     @staticmethod
-    def delete_file_by_id():
+    def delete_file_by_id_query():
         return '''DELETE FROM Files WHERE file_id = ?'''
     
     @staticmethod
-    def insert_file():
+    def insert_file_query():
         return '''
             INSERT INTO Files (file_path, file_type, file_description, monument_id)
             VALUES (?, ?, ?, ?)
@@ -183,28 +183,43 @@ class DataBaseQueries:
         '''
     
     #TODO:
+    @staticmethod
+    def get_all_excavation_squares_query_query():
+        return """
+                SELECT * FROM ExcavationSquares
+                """
 
     @staticmethod
-    def get_excavation_squares_for_monument_by_monument_id():
+    def get_excavation_squares_for_monument_by_monument_id_query():
         return """
         SELECT square_id, geometry, geom_description
         FROM ExcavationSquares 
         WHERE monument_id = ?
         """
     @staticmethod
-    def get_excavation_square_by_id():
-        return '''SELECT geometry, geom_description  FROM Files WHERE square_id = ?'''
+    def get_excavation_square_by_id_query_query():
+        return '''SELECT geometry, geom_description  FROM ExcavationSquares WHERE square_id = ?'''
     
     @staticmethod
-    def delete_excavation_square_by_id():
+    def delete_excavation_square_by_id_query_query():
         return '''DELETE FROM ExcavationSquares WHERE square_id = ?'''
     
     @staticmethod
-    def create_excavation_square_by_monument_id():
+    def create_excavation_square_by_monument_id_query():
         return"""
             INSERT INTO ExcavationSquares (geometry, geom_description, monument_id)
             VALUES (?, ?, ?)
             """
+    
+    @staticmethod
+    def update_excavation_square_by_square_id_query(set_clause):
+        return f"""
+            UPDATE ExcavationSquares
+            SET {set_clause}
+            WHERE square_id = ?
+            """
+
+
 
     # @staticmethod
     # def insert_file():
