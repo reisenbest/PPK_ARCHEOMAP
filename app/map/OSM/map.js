@@ -1,26 +1,25 @@
 // === Инициализация карты ===
-var map = L.map("map", {
-  minZoom: 14,
-  maxZoom: 18,
-  maxBounds: [
-    [59.946, 30.295],
-    [59.953, 31.32],
-  ],
-}).setView([59.95, 31.3167], 15);
+// Инициализация карты с правильными границами
+     var mapBounds = [
+  [59.944, 30.300078], // юго-запад
+  [59.955, 30.333123]  // северо-восток
+];
 
-// === Слой тайлов ===
+var map = L.map('map', {
+  minZoom: 15,
+  maxZoom: 20,
+  maxBounds: mapBounds,
+  maxBoundsViscosity: 1.0
+}).setView([59.970, 30.356], 15); // Центр ближе к Петропавловке
+
 L.tileLayer("tiles2/{z}/{x}/{y}.png", {
-  minZoom: 10,
+  bounds: mapBounds, // Используем те же границы
+  minZoom: 15,
   maxZoom: 20,
   tileSize: 256,
   noWrap: true,
-  bounds: [
-    [59.946, 30.295],
-    [59.953, 32.32],
-  ],
-  errorTileUrl: "blank.png",
+  errorTileUrl: "blank.png"
 }).addTo(map);
-
 // === Статичный маркер Петропавловской крепости ===
 L.marker([59.95, 30.3167])
   .addTo(map)

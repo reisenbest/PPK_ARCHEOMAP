@@ -16,10 +16,10 @@
   <widget class="QWebEngineView" name="MapContainer">
    <property name="geometry">
     <rect>
-     <x>-10</x>
-     <y>10</y>
-     <width>1011</width>
-     <height>731</height>
+     <x>10</x>
+     <y>40</y>
+     <width>861</width>
+     <height>701</height>
     </rect>
    </property>
    <property name="url">
