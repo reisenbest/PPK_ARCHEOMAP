@@ -5,7 +5,7 @@ from utils.base_classes import BaseView
 from PyQt5.QtCore import QObject
 import os
 from PyQt5.QtCore import QObject, Qt
-from PyQt5.QtWidgets import QFileDialog, QInputDialog, QMessageBox, QTableWidgetItem
+from PyQt5.QtWidgets import QMessageBox
 import shutil
 from PyQt5.QtGui import QStandardItemModel, QStandardItem
 import config
@@ -29,7 +29,7 @@ class ManageFilesController(QObject):
         self.monument_id = monument_id
         self.selected_files = []
         
-        self.utils = UtilsForViews()
+        self.utils = UtilsForViews(view=self.view)
 
         self.setup_connections()
         self.load_files()
@@ -66,6 +66,11 @@ class ManageFilesController(QObject):
     def browse_file(self):
 
         file_data = self.utils.browse_file_in_file_system(view_obj=self.view)
+
+        if not file_data:
+            # Пользователь отменил выбор или ввод — ничего не делаем
+            return
+
         # Получаем данные памятника по ID
         monument_record = self.db_manager.monuments_table.get_monument_by_id(self.monument_id)
         if not monument_record:

@@ -28,7 +28,7 @@ class DeleteMonumentController(QObject):
         self.db_manager = db_manager  # Ссылка на менеджер БД
         self.setup_connections()  # Настройка подключений (кнопки)
 
-        self.utils = UtilsForViews()
+        self.utils = UtilsForViews(view=self.view)
 
     def show(self):
         """Отображаем окно с данными памятника."""

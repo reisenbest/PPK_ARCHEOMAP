@@ -46,7 +46,7 @@ class UpdateMonumentController(QObject):
             monument_id=self.monument_details['monument_id'],
             parent=self.view
         )
-        self.utils = UtilsForViews()
+        self.utils = UtilsForViews(self.view)
         self.excavation_squares_list_dialog = ExcavationSquaresListController(monument_id=self.monument_details['monument_id'],
                                                                               db_manager=self.db_manager)
 

@@ -36,7 +36,7 @@ class PutExcavationSquaresController(QObject):
         self.view = PutExcavationSquaresView(parent)
         
         self.db_manager = db_manager
-        self.utils = UtilsForViews()
+        self.utils = UtilsForViews(view=self.view)
         
         self.monument_id = monument_id
         self.existing_data = existing_data  # ← новый параметр
@@ -196,9 +196,9 @@ class PutExcavationSquaresController(QObject):
             QMessageBox.warning(self.view, "Недостаточно точек", "Полигон должен содержать как минимум 3 точки.")
             return
         
-    
-        if points[0] != points[-1]:
-            points.append(points[0])
+        #добавляет точку, дублирующую первую (типо так принято в geojson)
+        # if points[0] != points[-1]:
+        #     points.append(points[0])
 
         geojson_obj = {
             "type": "Polygon",

@@ -2,12 +2,11 @@
 
 CREATE TABLE "Monuments" (
 	"monument_id"	INTEGER NOT NULL UNIQUE,
-	"name"	TEXT NOT NULL,
+	"name"	TEXT NOT NULL UNIQUE,
 	"description"	TEXT,
 	"research_object"	TEXT,
 	PRIMARY KEY("monument_id" AUTOINCREMENT)
 )
-
 
 CREATE TABLE "Coordinates" (
 	"coord_id"	INTEGER NOT NULL UNIQUE,

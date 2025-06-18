@@ -3,17 +3,14 @@ import os
 import sys
 import re  # для очистки имени
 import config
-import shutil
 from PyQt5.QtWidgets import QDialog, QMessageBox
 from PyQt5.QtCore import pyqtSlot, QObject
-from PyQt5.uic import loadUi
-from PyQt5.QtWidgets import QFileDialog
-from PyQt5.QtWidgets import QInputDialog
 import json
 from utils.base_classes import BaseView
 from utils.validate_manager import ValidateUILevelManager
 from utils.utils import UtilsForViews
-from views.monumets_list_window.excavation_squares_list import ExcavationSquaresListController
+
+
 sys.path.append(os.path.abspath(os.path.join(
     os.path.dirname(__file__), '..', '..', '..')))
 
@@ -47,7 +44,7 @@ class CreateMonumentController(QObject):
         self.set_placeholders()
 
         self.validator = ValidateUILevelManager(db_manager=self.db_manager)
-        self.utils = UtilsForViews()
+        self.utils = UtilsForViews(view=self.view)
         # self.excavation_squares_list_dialog = ExcavationSquaresListController()
         self.selected_files = []  # список словарей с путём и описанием
 
@@ -80,8 +77,12 @@ class CreateMonumentController(QObject):
 
     @pyqtSlot()
     def browse_file(self):
-        #FIXME: если нажать на кноку выбрать файл а потом нажать отмену - выдает ошибку
         file_data = self.utils.browse_file_in_file_system(view_obj=self.view)
+
+        if not file_data:
+            # Пользователь отменил выбор или ввод — ничего не делаем
+            return
+
 
         self.selected_files.append({
             'path': file_data['path'],
@@ -106,7 +107,6 @@ class CreateMonumentController(QObject):
 
         # Скопировать файл
         files_data = []
-        # TODO
         # FIXME: Внутри все сделано так, как будто при создании памятника доступен множественный выбор файлов
         files_data = self.utils.copy_selected_files_to_monument_folder(view_obj=self.view,
                                                                        selected_files=self.selected_files,
@@ -146,7 +146,3 @@ class CreateMonumentController(QObject):
         except Exception as e:
             QMessageBox.warning(
                 self.view, "Ошибка при создании памятника", str(e))
-
-    # def excavation_squares_list_dialog(self):
-    #     # вызываем exec_() на объекте QDialog
-    #     self.excavation_squares_list_dialog.view.exec_()
