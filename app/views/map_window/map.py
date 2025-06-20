@@ -12,7 +12,7 @@ from PyQt5.QtCore import pyqtSlot
 from database.db_main_connection import DataBaseMonumentsTableManager
 # Добавляем корневую директорию в sys.path
 # Обеспечиваем корректный импорт при запуске из корня
-
+import json
 
 from PyQt5.QtWebEngineWidgets import QWebEngineView, QWebEngineSettings
 
@@ -47,20 +47,46 @@ class MapBridge(QObject):
         super().__init__(parent)
         self.db_manager = db_manager
 
+
     @pyqtSlot(result='QVariant')
     def get_monuments_markers(self):
         monuments = self.db_manager.monuments_table.get_monuments()
         data = []
+
         for monument in monuments:
-            print('look', monument)
-            data.append({'lat': monument['latitude'],
-                         'lng': monument['longitude'],
-                         'label': monument['research_object']})
-            
-        # print(monuments)
-        # Координаты двух бастионов Петропавловской крепости
+            print(f"\n=== Обработка памятника: {monument['name']} (ID: {monument['monument_id']}) ===")
+            monument_entry = {
+                'lat': monument['latitude'],
+                'lng': monument['longitude'],
+                'label': monument['research_object'],
+                'polygons': []
+            }
+
+            excavation_squares = monument.get('excavation_squares', [])
+            has_polygons = False
+
+            for square_group in excavation_squares:
+                for square in square_group:
+                    try:
+                        geom = json.loads(square['geometry'])  # Преобразуем строку в словарь
+                        if geom['type'] == 'Polygon':
+                            coords = geom['coordinates']  # список списков координат
+                            monument_entry['polygons'].append(coords)
+                            has_polygons = True
+                            print(f"  ✅ Найден полигон с {len(coords[0])} точками:")
+                            for i, pt in enumerate(coords[0]):
+                                print(f"    Точка {i+1}: [lng: {pt[0]}, lat: {pt[1]}]")
+                        else:
+                            print(f"  ⚠️ Тип геометрии не Polygon: {geom['type']}")
+                    except Exception as e:
+                        print(f"  ❌ Ошибка при разборе геометрии: {e}")
+
+            if not has_polygons:
+                print("  🚫 Нет полигонов, пропуск.")
+
+            data.append(monument_entry)
+
         return data
-    
 
 class MapController(QObject):
     def __init__(self, db_manager, parent=None):

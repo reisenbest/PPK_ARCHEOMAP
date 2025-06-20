@@ -20,7 +20,7 @@ class ManageFilesView(QDialog, BaseView):
         super().__init__(parent)
         self.load_ui('manage_files_window.ui')  # путь должен быть правильный
 
-        
+
 class ManageFilesController(QObject):
     def __init__(self, db_manager, monument_id, parent=None):
         super().__init__(parent)
@@ -28,7 +28,7 @@ class ManageFilesController(QObject):
         self.db_manager = db_manager
         self.monument_id = monument_id
         self.selected_files = []
-        
+
         self.utils = UtilsForViews(view=self.view)
 
         self.setup_connections()
@@ -43,20 +43,23 @@ class ManageFilesController(QObject):
 
     def load_files(self):
         try:
-            files = self.db_manager.files_table.get_files_for_monument_by_monument_id(self.monument_id)
+            files = self.db_manager.files_table.get_files_for_monument_by_monument_id(
+                self.monument_id)
         except Exception as e:
             QMessageBox.critical(self.view, "Ошибка загрузки", str(e))
             return
 
         model = QStandardItemModel(len(files), 4)
         model.setHorizontalHeaderLabels(["ID", "Имя файла", "Тип", "Описание"])
-        
+
         for row_idx, file_data in enumerate(files):
             print(file_data)
             model.setItem(row_idx, 0, QStandardItem(str(file_data["file_id"])))
             model.setItem(row_idx, 1, QStandardItem(file_data["file_path"]))
-            model.setItem(row_idx, 2, QStandardItem(file_data.get("file_type", "")))
-            model.setItem(row_idx, 3, QStandardItem(file_data.get("file_description", "")))
+            model.setItem(row_idx, 2, QStandardItem(
+                file_data.get("file_type", "")))
+            model.setItem(row_idx, 3, QStandardItem(
+                file_data.get("file_description", "")))
 
         self.view.filesTableView.setModel(model)
         self.view.filesTableView.resizeColumnsToContents()
@@ -65,21 +68,24 @@ class ManageFilesController(QObject):
     # @pyqtSlot()
     def browse_file(self):
 
-        file_data = self.utils.browse_file_in_file_system(view_obj=self.view)
+        file_data = self.utils.browse_file_in_file_system()
 
         if not file_data:
             # Пользователь отменил выбор или ввод — ничего не делаем
             return
 
         # Получаем данные памятника по ID
-        monument_record = self.db_manager.monuments_table.get_monument_by_id(self.monument_id)
+        monument_record = self.db_manager.monuments_table.get_monument_by_id(
+            self.monument_id)
         if not monument_record:
-            QMessageBox.critical(self.view, "Ошибка", "Не удалось получить данные памятника из базы")
+            QMessageBox.critical(
+                self.view, "Ошибка", "Не удалось получить данные памятника из базы")
             return
 
         monument_name_raw = monument_record.get('name', '')
         if not monument_name_raw:
-            QMessageBox.critical(self.view, "Ошибка", "Имя памятника не найдено в данных")
+            QMessageBox.critical(self.view, "Ошибка",
+                                 "Имя памятника не найдено в данных")
             return
 
         # Делаем безопасное имя для папки
@@ -88,7 +94,8 @@ class ManageFilesController(QObject):
 
         # Обработка полного пути и имени файла
         original_filename = os.path.basename(file_data['path'])
-        safe_filename = re.sub(r'[^\w\-. ]', '_', original_filename)  # точки и дефисы оставляем
+        # точки и дефисы оставляем
+        safe_filename = re.sub(r'[^\w\-. ]', '_', original_filename)
 
         # Защита от спецсимволов во всём пути (не только имя файла!)
         safe_target_path = os.path.join(monument_folder, safe_filename)
@@ -96,19 +103,22 @@ class ManageFilesController(QObject):
         try:
             shutil.copy(file_data['path'], safe_target_path)
         except Exception as e:
-            QMessageBox.critical(self.view, "Ошибка копирования файла", f"Не удалось скопировать файл:\n{str(e)}")
+            QMessageBox.critical(
+                self.view, "Ошибка копирования файла", f"Не удалось скопировать файл:\n{str(e)}")
             return
 
         # Получить относительный путь (безопасно)
-        relative_path = os.path.relpath(safe_target_path, config.DATA_STORAGE_DIR)
-        
+        relative_path = os.path.relpath(
+            safe_target_path, config.DATA_STORAGE_DIR)
+
         try:
-            self.db_manager.files_table.add_file(relative_path, 
-                                                file_data['file_type'],
-                                                file_data['description'],
-                                                self.monument_id)
+            self.db_manager.files_table.add_file(relative_path,
+                                                 file_data['file_type'],
+                                                 file_data['description'],
+                                                 self.monument_id)
         except Exception as e:
-            QMessageBox.critical(self.view, "Ошибка при добавлении файла в БД", str(e))
+            QMessageBox.critical(
+                self.view, "Ошибка при добавлении файла в БД", str(e))
             return
 
         self.load_files()
@@ -119,7 +129,8 @@ class ManageFilesController(QObject):
         selected_rows = set(index.row() for index in table.selectedIndexes())
 
         if not selected_rows:
-            QMessageBox.information(self.view, "Удаление", "Выберите хотя бы одну строку для удаления.")
+            QMessageBox.information(
+                self.view, "Удаление", "Выберите хотя бы одну строку для удаления.")
             return
 
         confirm = QMessageBox.question(
@@ -132,14 +143,17 @@ class ManageFilesController(QObject):
             return
 
         # Получаем имя памятника для построения пути
-        monument_record = self.db_manager.monuments_table.get_monument_by_id(self.monument_id)
+        monument_record = self.db_manager.monuments_table.get_monument_by_id(
+            self.monument_id)
         if not monument_record:
-            QMessageBox.critical(self.view, "Ошибка", "Не удалось получить данные памятника из базы")
+            QMessageBox.critical(
+                self.view, "Ошибка", "Не удалось получить данные памятника из базы")
             return
 
         monument_name_raw = monument_record.get('name', '')
         if not monument_name_raw:
-            QMessageBox.critical(self.view, "Ошибка", "Имя памятника не найдено в данных")
+            QMessageBox.critical(self.view, "Ошибка",
+                                 "Имя памятника не найдено в данных")
             return
 
         safe_name = re.sub(r'[^\w\-_ ]', '_', monument_name_raw.strip())
@@ -147,10 +161,12 @@ class ManageFilesController(QObject):
 
         for row in sorted(selected_rows, reverse=True):
             file_id_index = model.index(row, 0)
-            file_path_index = model.index(row, 1)  # путь или имя файла в столбце 1
+            # путь или имя файла в столбце 1
+            file_path_index = model.index(row, 1)
 
             file_id = int(model.data(file_id_index))
-            relative_path = model.data(file_path_index)  # относительный путь из БД
+            # относительный путь из БД
+            relative_path = model.data(file_path_index)
 
             full_path = os.path.join(config.DATA_STORAGE_DIR, relative_path)
 
@@ -158,17 +174,14 @@ class ManageFilesController(QObject):
                 try:
                     os.remove(full_path)
                 except Exception as e:
-                    QMessageBox.warning(self.view, "Ошибка удаления файла", f"Не удалось удалить файл:\n{full_path}\n{e}")
+                    QMessageBox.warning(
+                        self.view, "Ошибка удаления файла", f"Не удалось удалить файл:\n{full_path}\n{e}")
                     continue
 
             try:
                 self.db_manager.files_table.delete_file_by_id(file_id)
             except Exception as e:
-                QMessageBox.warning(self.view, "Ошибка удаления записи из базы", str(e))
+                QMessageBox.warning(
+                    self.view, "Ошибка удаления записи из базы", str(e))
 
         self.load_files()
-
-    
-
-
-    

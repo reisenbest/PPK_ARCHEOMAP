@@ -182,10 +182,7 @@ class DataBaseMonumentsTableManager:
                 excavation_squares = self.db_manager_common._parse_query_result(excavation_squares_query, 'geometry')
                 if excavation_squares not in monuments[monument_id]["excavation_squares"]:
                     monuments[monument_id]["excavation_squares"].append(excavation_squares) 
-                print('kekekeke', excavation_squares)
 
-
-        print(list(monuments.values()))
         return list(monuments.values())
 
     def get_monument_by_id(self, monument_id: int):

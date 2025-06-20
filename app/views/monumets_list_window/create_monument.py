@@ -77,7 +77,7 @@ class CreateMonumentController(QObject):
 
     @pyqtSlot()
     def browse_file(self):
-        file_data = self.utils.browse_file_in_file_system(view_obj=self.view)
+        file_data = self.utils.browse_file_in_file_system()
 
         if not file_data:
             # Пользователь отменил выбор или ввод — ничего не делаем
@@ -108,7 +108,7 @@ class CreateMonumentController(QObject):
         # Скопировать файл
         files_data = []
         # FIXME: Внутри все сделано так, как будто при создании памятника доступен множественный выбор файлов
-        files_data = self.utils.copy_selected_files_to_monument_folder(view_obj=self.view,
+        files_data = self.utils.copy_selected_files_to_monument_folder(
                                                                        selected_files=self.selected_files,
                                                                        monument_path=monument_path
                                                                        )

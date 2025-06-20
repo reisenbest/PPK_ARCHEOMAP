@@ -103,7 +103,7 @@ class PutExcavationSquaresController(QObject):
         lon = self.view.lonSpinBox.value()
         # Считываем значения широты и долготы из соответствующих spinbox-ов на форме.
 
-        self.utils.set_coordinate_to_point_list(view_obj=self.view, row=row, lat=lat, lon=lon)
+        self.utils.set_coordinate_to_point_list(row=row, lat=lat, lon=lon)
 
         # Очищаем (сбрасываем в 0.0) значения spinbox-ов, чтобы пользователь мог вводить новые координаты.
         self.view.latSpinBox.setValue(0.0)
@@ -120,7 +120,7 @@ class PutExcavationSquaresController(QObject):
         lon = self.view.lonSpinBox.value()
         # Считываем значения широты и долготы из соответствующих spinbox-ов на форме.
 
-        self.utils.set_coordinate_to_point_list(view_obj=self.view, row=current_row, lat=lat, lon=lon)
+        self.utils.set_coordinate_to_point_list(row=current_row, lat=lat, lon=lon)
 
         
 
@@ -136,10 +136,10 @@ class PutExcavationSquaresController(QObject):
         self.update_buttons_state()  # Обновить состояние кнопок после удаления
 
     def move_up_point_button(self):
-        self.utils.move_point(view_obj=self.view, move_up=True)
+        self.utils.move_point(move_up=True)
 
     def move_down_point_button(self):
-        self.utils.move_point(view_obj=self.view, move_up=False)
+        self.utils.move_point( move_up=False)
 
     def update_buttons_state(self):
         selected = self.view.pointsList.selectedItems()
@@ -197,8 +197,8 @@ class PutExcavationSquaresController(QObject):
             return
         
         #добавляет точку, дублирующую первую (типо так принято в geojson)
-        # if points[0] != points[-1]:
-        #     points.append(points[0])
+        if points[0] != points[-1]:
+            points.append(points[0])
 
         geojson_obj = {
             "type": "Polygon",
@@ -263,7 +263,7 @@ class PutExcavationSquaresController(QObject):
                 row = self.view.pointsList.rowCount()
                 self.view.pointsList.insertRow(row)
 
-                self.utils.set_coordinate_to_point_list(view_obj=self.view, row=row, lat=lat, lon=lon)
+                self.utils.set_coordinate_to_point_list(row=row, lat=lat, lon=lon)
 
         
             self.view.descriptionEdit.setPlainText(self.existing_data.get('geom_description', ''))
