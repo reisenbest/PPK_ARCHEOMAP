@@ -10,6 +10,7 @@ from utils.base_classes import BaseView
 from PyQt5.QtWebChannel import QWebChannel
 from PyQt5.QtCore import pyqtSlot
 from database.db_main_connection import DataBaseMonumentsTableManager
+from views.monumets_list_window.read_monument import ReadMonumentController
 # Добавляем корневую директорию в sys.path
 # Обеспечиваем корректный импорт при запуске из корня
 import json
@@ -46,6 +47,7 @@ class MapBridge(QObject):
     def __init__(self, db_manager, parent=None):  # <-- получаем MapBridge извне
         super().__init__(parent)
         self.db_manager = db_manager
+        self.read_monument = None  # 🟢 сохраняем ссылку
 
 
     @pyqtSlot(result='QVariant')
@@ -56,11 +58,12 @@ class MapBridge(QObject):
         for monument in monuments:
             print(f"\n=== Обработка памятника: {monument['name']} (ID: {monument['monument_id']}) ===")
             monument_entry = {
-                'lat': monument['latitude'],
-                'lng': monument['longitude'],
-                'label': monument['research_object'],
-                'polygons': []
-            }
+                            'lat': monument['latitude'],
+                            'lng': monument['longitude'],
+                            'label': monument['research_object'],
+                            'monument_id': monument['monument_id'],
+                            'polygons': []
+                            }
 
             excavation_squares = monument.get('excavation_squares', [])
             has_polygons = False
@@ -87,6 +90,13 @@ class MapBridge(QObject):
             data.append(monument_entry)
 
         return data
+    
+    @pyqtSlot(int)
+    def open_monument_details(self, monument_id):
+        print(f"Открываем памятник с ID: {monument_id}")
+        monument = self.db_manager.monuments_table.get_monument_by_id(monument_id)
+        self.read_monument = ReadMonumentController(monument_data=monument)
+        self.read_monument.show()
 
 class MapController(QObject):
     def __init__(self, db_manager, parent=None):
