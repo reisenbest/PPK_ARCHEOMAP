@@ -76,7 +76,7 @@ function updateMarkers() {
               fillOpacity: 0.4
             }).addTo(map);
 
-            // === Реакция на клик по полигону (выделение, центрирование) ===
+            // === Реакция на клик по полигону (выделение, центрирование, popup) ===
             polygon.on('click', () => {
               if (selectedPolygon) {
                 selectedPolygon.setStyle({
@@ -92,6 +92,9 @@ function updateMarkers() {
 
               map.fitBounds(polygon.getBounds(), { padding: [20, 20] });
               selectedPolygon = polygon;
+
+              // Показываем пустой popup
+              polygon.bindPopup('').openPopup();
             });
 
             polygonLayers.push(polygon);
