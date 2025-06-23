@@ -77,6 +77,27 @@ class MonumentsQueries:
             LEFT JOIN Coordinates c ON m.monument_id = c.monument_id
             """
 
+    @staticmethod
+    def search_monuments_query():
+        return """
+            SELECT 
+                m.monument_id AS "ID",
+                m.name AS "Название",
+                m.description AS "Описание",
+                m.research_object AS "Объект исследования",
+                c.latitude AS "Широта",
+                c.longitude AS "Долгота",
+                c.note AS "Примечание"
+            FROM Monuments m
+            LEFT JOIN Coordinates c ON m.monument_id = c.monument_id
+            WHERE (
+                m.name LIKE ?
+                OR m.description LIKE ?
+                OR m.research_object LIKE ?
+                OR c.note LIKE ?
+            )
+    """
+
 class CoordinatesQueries:
 
     @staticmethod

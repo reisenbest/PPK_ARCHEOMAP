@@ -8,10 +8,30 @@ var map = L.map('map', {
   minZoom: 15,
   maxZoom: 20,
   maxBounds: mapBounds,
-  maxBoundsViscosity: 1.0
-}).setView([59.970, 30.356], 15); // Центр ближе к Петропавловке
+  maxBoundsViscosity: 1.0,
+  attributionControl: false
+}).setView([59.970, 30.356], 15);
 
-addLocalTileLayer(map, mapBounds);
+
+// === Добавляем подложки как overlays ===
+var osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+  minZoom: 1,
+  maxZoom: 20
+});
+
+var localTilesLayer = createLocalTileLayer(mapBounds);
+
+// По умолчанию включаем оба слоя
+osmLayer.addTo(map);
+localTilesLayer.addTo(map);
+
+var overlays = {
+  "OpenStreetMap": osmLayer,
+  "Локальные тайлы": localTilesLayer
+};
+
+L.control.layers(null, overlays, {collapsed: false}).addTo(map);
 
 // === Статичный маркер Петропавловской крепости ===
 L.marker([59.95, 30.3167], { icon: monumentIcon })
@@ -66,9 +86,9 @@ function updateMarkers() {
         clearPolygonPointMarkers();
 
         if (m.polygons && m.polygons.length > 0) {
-          m.polygons.forEach(polygonCoords => {
-            const latlngs = polygonCoords[0].map(pt => [pt[1], pt[0]]);
-
+          m.polygons.forEach(polygonObj => {
+            const latlngs = polygonObj.coords[0].map(pt => [pt[1], pt[0]]);
+            const description = polygonObj.geom_description || '';
             const polygon = L.polygon(latlngs, {
               color: 'blue',
               weight: 2,
@@ -93,8 +113,8 @@ function updateMarkers() {
               map.fitBounds(polygon.getBounds(), { padding: [20, 20] });
               selectedPolygon = polygon;
 
-              // Показываем пустой popup
-              polygon.bindPopup('').openPopup();
+              // Показываем popup с описанием
+              polygon.bindPopup(description).openPopup();
             });
 
             polygonLayers.push(polygon);

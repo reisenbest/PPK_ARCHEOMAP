@@ -412,6 +412,13 @@ class DataBaseFilesTableManager:
         """
         self.db_manager_common._execute_query(self.db_queries.files_table.update_file_paths_query(), [new_path, file_id], error_msg=f"Не удалось обновить путь файла ID {file_id}")
 
+    def search_monuments(self, text: str):
+        # Готовим строку для LIKE
+        like_text = f"%{text}%"
+        
+        query_str = self.db_queries.monuments_table.search_monuments_query()
+        query = self.db_manager_common._execute_query(query_str, [like_text]*4)
+        return self.db_manager_common._parse_query_result(query)
 
 class DataBaseExcavationSquaresManager:
     """docstring for DataBaseExcavationSquaresManager."""

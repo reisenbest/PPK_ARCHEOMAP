@@ -14,6 +14,20 @@
    <string>Список памятников</string>
   </property>
 
+  <widget class="QLineEdit" name="searchLineEdit">
+   <property name="geometry">
+    <rect>
+     <x>120</x>
+     <y>0</y>
+     <width>891</width>
+     <height>20</height>
+    </rect>
+   </property>
+   <property name="placeholderText">
+    <string>Поиск по названию, описанию, объекту исследования, примечанию...</string>
+   </property>
+  </widget>
+
   <widget class="QTableView" name="monumentsTableView">
    <property name="geometry">
     <rect>
