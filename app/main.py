@@ -6,6 +6,7 @@ from database.db_main_connection import UnionDataBaseManagerController
 
 def main():
     app = QApplication(sys.argv)
+    app.setStyle('Windows')
 
     # Инициализируем менеджер БД на основе QSql
     db_manager = UnionDataBaseManagerController()
