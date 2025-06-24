@@ -143,6 +143,54 @@ function showMonumentDetails(monumentId) {
   }
 }
 
+
+
+function showAllPolygons() {
+  clearPolygonLayers();
+  clearPolygonPointMarkers();
+
+  if (!window.bridge || !bridge.get_monuments_markers) {
+    console.error("bridge или get_monuments_markers не определён");
+    return;
+  }
+
+  bridge.get_monuments_markers(function (markers) {
+    markers.forEach(m => {
+      if (m.polygons && m.polygons.length > 0) {
+        m.polygons.forEach(polygonObj => {
+          const latlngs = polygonObj.coords[0].map(pt => [pt[1], pt[0]]);
+          const description = polygonObj.geom_description || '';
+          const polygon = L.polygon(latlngs, {
+            color: 'blue',
+            weight: 2,
+            fillColor: 'lightblue',
+            fillOpacity: 0.4
+          }).addTo(map);
+
+          polygon.on('click', () => {
+            if (selectedPolygon) {
+              selectedPolygon.setStyle({
+                color: 'blue',
+                weight: 2
+              });
+            }
+
+            polygon.setStyle({
+              color: 'red',
+              weight: 4
+            });
+
+            map.fitBounds(polygon.getBounds(), { padding: [20, 20] });
+            selectedPolygon = polygon;
+            polygon.bindPopup(description).openPopup();
+          });
+
+          polygonLayers.push(polygon);
+        });
+      }
+    });
+  });
+}
 // === Установка канала WebChannel ===
 new QWebChannel(qt.webChannelTransport, function (channel) {
   window.bridge = channel.objects.bridge;

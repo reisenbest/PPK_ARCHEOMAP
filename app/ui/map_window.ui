@@ -75,7 +75,6 @@ QLabel[styleSheet*=&quot;color: red&quot;] {
      <height>701</height>
     </rect>
    </property>
-
    <property name="url">
     <url>
      <string>about:blank</string>
@@ -119,6 +118,19 @@ QLabel[styleSheet*=&quot;color: red&quot;] {
    </property>
    <property name="text">
     <string>Refresh</string>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="ShowAllPolygonsBtn">
+   <property name="geometry">
+    <rect>
+     <x>730</x>
+     <y>770</y>
+     <width>181</width>
+     <height>41</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Показать все полигоны</string>
    </property>
   </widget>
  </widget>

@@ -42,6 +42,9 @@ class MapView(QWidget, BaseView):
     def refresh_map_markers(self):
         self.web_view.page().runJavaScript("updateMarkersFromQt();")
 
+    def show_all_polygons_js(self):
+        self.web_view.page().runJavaScript("showAllPolygons();")
+
 
 class MapBridge(QObject):
     def __init__(self, db_manager, parent=None):  # <-- получаем MapBridge извне
@@ -121,9 +124,15 @@ class MapController(QObject):
 
     def setup_connections(self):
         self.view.RefreshBtn.clicked.connect(self.refresh_map_condition)
+        self.view.ShowAllPolygonsBtn.clicked.connect(self.show_all_polygons)
 
     @pyqtSlot()
     def refresh_map_condition(self):
         """Обновление карты по кнопке"""
         print("[INFO] Обновляем маркеры на карте...")
         self.view.refresh_map_markers()
+    
+    @pyqtSlot()
+    def show_all_polygons(self):
+        print("[INFO] Показываем все полигоны...")
+        self.view.show_all_polygons_js()
