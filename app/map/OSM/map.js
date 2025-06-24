@@ -22,13 +22,18 @@ var osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
 
 var localTilesLayer = createLocalTileLayer(mapBounds);
 
+// === Historical plan overlay ===
+var imageBounds = mapBounds; // если план полностью совпадает с границами карты
+var historicalPlan = createHistoricalPlanOverlay(mapBounds);
+
 // По умолчанию включаем оба слоя
 osmLayer.addTo(map);
 localTilesLayer.addTo(map);
 
 var overlays = {
   "OpenStreetMap": osmLayer,
-  "Локальные тайлы": localTilesLayer
+  "Локальные тайлы": localTilesLayer,
+  "Шуберт 1828": historicalPlan
 };
 
 L.control.layers(null, overlays, {collapsed: false}).addTo(map);

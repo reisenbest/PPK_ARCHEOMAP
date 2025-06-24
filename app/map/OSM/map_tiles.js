@@ -10,3 +10,17 @@ function createLocalTileLayer(mapBounds) {
     errorTileUrl: "blank.png"
   });
 }
+
+function createHistoricalPlanOverlay() {
+
+  var imageBounds = [
+    [59.9414442615, 30.2918196905],   // юго-запад (левый нижний)
+    [59.9572002615, 30.3365046905]    // северо-восток (правый верхний)
+  ];
+  
+  return L.imageOverlay('historical_plans/1828_shubert.png', imageBounds, {
+    opacity: 1
+  });
+}
+
+var historicalPlan = createHistoricalPlanOverlay();
