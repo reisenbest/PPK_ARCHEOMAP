@@ -132,61 +132,125 @@ class UtilsForViews:
 
     def read_monument_content(self, data):
         '''
-        возвращает html разметку для отображения контента. мб надо возвращать файл со стилями?? 
-        пока так
+        Возвращает HTML-разметку с встроенными стилями для отображения информации о памятнике.
         '''
-        
+        style = """
+            <style>
+                body {
+                    font-family: Tahoma, Arial, sans-serif;
+                    font-size: 13px;
+                    color: #000;
+                    background-color: #e0e0e0;
+                    padding: 10px;
+                }
+                h2 {
+                    font-size: 15px;
+                    margin: 15px 0 5px 0;
+                    color: #333;
+                    border-bottom: 1px solid #999;
+                    padding-bottom: 2px;
+                }
+                p {
+                    margin: 5px 0 10px 0;
+                }
+                ul {
+                    padding-left: 20px;
+                }
+                li {
+                    margin-bottom: 8px;
+                }
+                a {
+                    color: #003399;
+                    text-decoration: none;
+                }
+                a:hover {
+                    text-decoration: underline;
+                }
+                .section {
+                    margin-bottom: 15px;
+                    background: #f5f5f5;
+                    padding: 10px;
+                    border: 1px solid #bbb;
+                    border-radius: 4px;
+                }
+            </style>
+        """
+
         content = f"""
-            <h2>ID памятника</h2>
-            <p>{data['monument_id']}</p>
+            {style}
+            <div class="section">
+                <h2>ID памятника</h2>
+                <p>{data['monument_id']}</p>
 
-            <h2>Название</h2>
-            <p>{data['name']}</p>
+                <h2>Название</h2>
+                <p>{data['name']}</p>
 
-            <h2>Описание</h2>
-            <p>{data['description']}</p>
+                <h2>Описание</h2>
+                <p>{data['description']}</p>
 
-            <h2>Объект исследования</h2>
-            <p>{data['research_object']}</p>
+                <h2>Объект исследования</h2>
+                <p>{data['research_object']}</p>
 
-            <h2>Широта</h2>
-            <p>{data['latitude']}</p>
+                <h2>Широта</h2>
+                <p>{data['latitude']}</p>
 
-            <h2>Долгота</h2>
-            <p>{data['longitude']}</p>
+                <h2>Долгота</h2>
+                <p>{data['longitude']}</p>
 
-            <h2>Записка о координатах</h2>
-            <p>{data['note']}</p>
+                <h2>Записка о координатах</h2>
+                <p>{data['note']}</p>
+            </div>
         """
 
         files = data.get("files", [])
         if files:
-            content += "<h2>Файлы</h2><ul>"
+            content += """
+                <div class="section">
+                    <h2>Файлы</h2>
+                    <ul>
+            """
             for file in files:
                 content += f"""
                     <li>
-                        <b>Тип файла: {file['file_type']}</b>: описание: {file['file_description']}<br>
+                        <b>Тип файла:</b> {file['file_type']}<br>
+                        <b>Описание:</b> {file['file_description']}<br>
                         <i><a href="{file['file_path']}">{file['file_path']}</a></i>
                     </li>
                 """
-            content += "</ul>"
+            content += "</ul></div>"
         else:
-            content += "<h2>Файлы</h2><p>Нет прикреплённых файлов.</p>"
+            content += """
+                <div class="section">
+                    <h2>Файлы</h2>
+                    <p>Нет прикреплённых файлов.</p>
+                </div>
+            """
 
         excavation_squares = data.get("excavation_squares", [])
         if excavation_squares:
-            content += "<h2>Территория исследования - поворотные точки</h2><ul>"
-            for excavation_square in excavation_squares:
+            content += """
+                <div class="section">
+                    <h2>Территория исследования — поворотные точки</h2>
+                    <ul>
+            """
+            for square in excavation_squares:
                 content += f"""
                     <li>
-                        <b>координаты: {excavation_square['geometry']}</b>: описание: {excavation_square['geom_description']}<br>
+                        <b>Координаты:</b> {square['geometry']}<br>
+                        <b>Описание:</b> {square['geom_description']}
                     </li>
                 """
-            content += "</ul>"
+            content += "</ul></div>"
         else:
-            content += "<h2>Файлы</h2><p>Нет поворотные точки</p>"
+            content += """
+                <div class="section">
+                    <h2>Территория исследования</h2>
+                    <p>Нет поворотных точек.</p>
+                </div>
+            """
 
         return content
+
     
     def set_coordinate_to_point_list(self, row, lat, lon):
 
