@@ -13,72 +13,60 @@
   <property name="windowTitle">
    <string>MainWindow</string>
   </property>
+  <property name="styleSheet">
+   <string notr="true">QWidget {
+    background: #c0c0c0;
+    font-family: Tahoma, Arial, sans-serif;
+    color: #000;
+    font-size: 13px;
+}
+
+QLabel {
+    font-weight: normal;
+    color: #000;
+    background: transparent;
+}
+
+QLineEdit, QTextEdit, QDoubleSpinBox {
+    background: #fff;
+    border: 2px solid #808080;
+    border-radius: 0px;
+    padding: 2px 4px;
+    font-size: 13px;
+    color: #000;
+}
+
+QPushButton {
+    background: #dfdfdf;
+    border: 2px outset #fff;
+    border-bottom: 2px solid #808080;
+    border-right: 2px solid #808080;
+    border-radius: 0px;
+    padding: 4px 16px;
+    font-size: 13px;
+    color: #000;
+    min-width: 80px;
+}
+
+QPushButton:pressed {
+    border: 2px inset #808080;
+    background: #bdbdbd;
+}
+
+QTextBrowser {
+    background: #e0e0e0;
+    border: 2px solid #808080;
+    color: #222;
+    font-size: 12px;
+}
+
+QLabel[styleSheet*=&quot;color: red&quot;] {
+    color: #b22222;
+    font-style: italic;
+    background: transparent;
+}</string>
+  </property>
   <widget class="QWidget" name="centralwidget">
-   <widget class="QPushButton" name="MenuMapButton">
-    <property name="geometry">
-     <rect>
-      <x>170</x>
-      <y>70</y>
-      <width>131</width>
-      <height>23</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>MAP</string>
-    </property>
-   </widget>
-   <widget class="QPushButton" name="MenuMonumentsListButton">
-    <property name="geometry">
-     <rect>
-      <x>170</x>
-      <y>130</y>
-      <width>121</width>
-      <height>23</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>Monuments List</string>
-    </property>
-   </widget>
-   <widget class="QPushButton" name="MenuSettingsButton">
-    <property name="geometry">
-     <rect>
-      <x>170</x>
-      <y>190</y>
-      <width>121</width>
-      <height>23</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>SETTINGS</string>
-    </property>
-   </widget>
-   <widget class="QPushButton" name="MenuInfoButton">
-    <property name="geometry">
-     <rect>
-      <x>170</x>
-      <y>240</y>
-      <width>131</width>
-      <height>23</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>INFORMATION</string>
-    </property>
-   </widget>
-   <widget class="QPushButton" name="MenuExitButton">
-    <property name="geometry">
-     <rect>
-      <x>170</x>
-      <y>300</y>
-      <width>131</width>
-      <height>23</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>EXIT</string>
-    </property>
-   </widget>
    <widget class="QLabel" name="MainMenuLabel">
     <property name="geometry">
      <rect>
@@ -92,6 +80,53 @@
      <string>MAIN MENU</string>
     </property>
    </widget>
+   <widget class="QWidget" name="">
+    <property name="geometry">
+     <rect>
+      <x>170</x>
+      <y>50</y>
+      <width>127</width>
+      <height>281</height>
+     </rect>
+    </property>
+    <layout class="QVBoxLayout" name="verticalLayout">
+     <item>
+      <widget class="QPushButton" name="MenuMapButton">
+       <property name="text">
+        <string>MAP</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="MenuMonumentsListButton">
+       <property name="text">
+        <string>Monuments List</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="MenuSettingsButton">
+       <property name="text">
+        <string>SETTINGS</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="MenuInfoButton">
+       <property name="text">
+        <string>INFORMATION</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="MenuExitButton">
+       <property name="text">
+        <string>EXIT</string>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </widget>
   </widget>
   <widget class="QMenuBar" name="menubar">
    <property name="geometry">
@@ -99,7 +134,7 @@
      <x>0</x>
      <y>0</y>
      <width>456</width>
-     <height>21</height>
+     <height>22</height>
     </rect>
    </property>
   </widget>
