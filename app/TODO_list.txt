@@ -62,3 +62,4 @@ UtilsForView - при создании передавать self.view того �
 utils read_monument_content вынести css html отдельно
 map get_monuments_markers рефакторинг
 map js... ну там ппц
+read monument  там еще и фпродумать чтобы файл правым кликом нормально открывался

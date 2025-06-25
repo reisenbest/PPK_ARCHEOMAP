@@ -36,7 +36,7 @@ class UtilsForViews:
         'description': description.strip(),
         'file_type': file_type.strip()
     }
-    def copy_selected_files_to_monument_folder(self, selected_files: list, monument_path: str,) -> list:
+    def copy_selected_files_to_monument_folder(self, selected_files: list, monument_path: str,):
         '''
         при создании памятника получает данные о выбранном файле 
         и копирует этот файл в директорию (папку) созданную для памятника
