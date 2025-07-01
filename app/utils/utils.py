@@ -7,6 +7,7 @@ from PyQt5.QtWidgets import QTableWidgetItem
 from PyQt5.QtWidgets import QAbstractItemView
 from PyQt5.QtCore import Qt
 
+
 class UtilsForViews:
     def __init__(self, view=None):
         self.view = view
@@ -17,25 +18,29 @@ class UtilsForViews:
         реализация диалогового окна с выбором файла на компьютере
         используется для загурзки файлов при создании и имземеннии объекта в БД
         '''
-        file_path, _ = QFileDialog.getOpenFileName(self.view, "Выберите файл", "", "Все файлы (*.*)")
+        file_path, _ = QFileDialog.getOpenFileName(
+            self.view, "Выберите файл", "", "Все файлы (*.*)")
         if not file_path:
             return
 
         # Ввод описания файла
-        description, ok = QInputDialog.getText(self.view, "Описание файла", f"Введите описание для:\n{os.path.basename(file_path)}")
+        description, ok = QInputDialog.getText(
+            self.view, "Описание файла", f"Введите описание для:\n{os.path.basename(file_path)}")
         if not ok:
             return
 
         # Ввод типа файла
-        file_type, ok_type = QInputDialog.getText(self.view, "Тип файла", f"Введите тип для:\n{os.path.basename(file_path)} (например: pdf, jpg, obj, txt...)")
+        file_type, ok_type = QInputDialog.getText(
+            self.view, "Тип файла", f"Введите тип для:\n{os.path.basename(file_path)} (например: pdf, jpg, obj, txt...)")
         if not ok_type:
             return
-        
+
         return {
-        'path': file_path,
-        'description': description.strip(),
-        'file_type': file_type.strip()
-    }
+            'path': file_path,
+            'description': description.strip(),
+            'file_type': file_type.strip()
+        }
+
     def copy_selected_files_to_monument_folder(self, selected_files: list, monument_path: str,):
         '''
         при создании памятника получает данные о выбранном файле 
@@ -56,7 +61,8 @@ class UtilsForViews:
                     target_path = os.path.join(monument_path, filename)
                     shutil.copy(file_path, target_path)
 
-                    relative_path = os.path.relpath(target_path, config.DATA_STORAGE_DIR)
+                    relative_path = os.path.relpath(
+                        target_path, config.DATA_STORAGE_DIR)
 
                     files_data.append({
                         'file_path': relative_path,
@@ -64,10 +70,12 @@ class UtilsForViews:
                         'file_description': description
                     })
                 except Exception as copy_err:
-                    QMessageBox.warning(self.view, "Ошибка при копировании файла", f"{file_path}\n{str(copy_err)}")
+                    QMessageBox.warning(
+                        self.view, "Ошибка при копировании файла", f"{file_path}\n{str(copy_err)}")
                     return None  # или return []
             else:
-                QMessageBox.warning(self.view, "Файл не найден", f"Файл не существует: {file_path}")
+                QMessageBox.warning(self.view, "Файл не найден",
+                                    f"Файл не существует: {file_path}")
                 return None
 
         return files_data
@@ -78,29 +86,31 @@ class UtilsForViews:
         все оперции с os и пр
         '''
         try:
-          os.makedirs(monument_path, exist_ok=True)
+            os.makedirs(monument_path, exist_ok=True)
         except Exception as folder_err:
-          QMessageBox.warning(self.view, "Ошибка при создании папки", str(folder_err))
-          return
-    
+            QMessageBox.warning(
+                self.view, "Ошибка при создании папки", str(folder_err))
+            return
+
     def delete_monument_folder(self, monument_name):
         '''
         удаление папки и ее содержимого для монумента при его удалении
         все оперции с os и пр
         '''
         try:
-          monument_path = os.path.join(config.DATA_STORAGE_DIR, monument_name)
-          if os.path.exists(monument_path):
-                          shutil.rmtree(monument_path)
-                          print(f"Папка памятника удалена: {monument_path}")
+            monument_path = os.path.join(
+                config.DATA_STORAGE_DIR, monument_name)
+            if os.path.exists(monument_path):
+                shutil.rmtree(monument_path)
+                print(f"Папка памятника удалена: {monument_path}")
         except Exception as folder_err:
             QMessageBox.warning(
-                        self.view,
-                        "Предупреждение",
-                        f"Памятник удалён из базы данных,\n"
-                        f"но произошла ошибка при удалении папки:\n{folder_err}"
-                        )
-            
+                self.view,
+                "Предупреждение",
+                f"Памятник удалён из базы данных,\n"
+                f"но произошла ошибка при удалении папки:\n{folder_err}"
+            )
+
     def rename_monument_folder(self, old_path, new_path):
         '''
         изменение имени созданной папки при изменени имени монумента
@@ -118,7 +128,7 @@ class UtilsForViews:
             QMessageBox.warning(
                 self.view, "Ошибка переименования папки", str(folder_err))
             return False
-        
+
     def execute_operation_on_menu_buttons(self, controller_instance, refresh_data_method):
         '''
         удаление папки и ее содержимого для монумента при его удалении
@@ -126,8 +136,8 @@ class UtilsForViews:
         принимает экземпляр класса контроллера, с которым связана кнопка (и соотвественно метод)
         '''
         result = controller_instance.view.exec()
-        #если закрыл окно через ОКЕЙ то выполняем обновление окна основного со списком памятников чтобы подтянуть произошедшие изменения
-        if result == QDialog.Accepted: 
+        # если закрыл окно через ОКЕЙ то выполняем обновление окна основного со списком памятников чтобы подтянуть произошедшие изменения
+        if result == QDialog.Accepted:
             refresh_data_method()  # Обновляем после успешного создания
 
     def read_monument_content(self, data):
@@ -207,14 +217,34 @@ class UtilsForViews:
             content += """
                 <div class="section">
                     <h2>Файлы</h2>
-                    <ul>
+                    <ul style='list-style: none; padding-left: 0;'>
             """
+            icon_map = {
+                'pdf': '📄',
+                'doc': '📄',
+                'docx': '📄',
+                'jpg': '🖼️',
+                'jpeg': '🖼️',
+                'png': '🖼️',
+                'mp4': '🎞️',
+                'avi': '🎞️',
+                'mp3': '🎵',
+                'wav': '🎵',
+                'txt': '📄',
+                'zip': '🗜️',
+                'rar': '🗜️',
+                'glb': '🧊',
+                'default': '📁'
+            }
             for file in files:
+                ext = file['file_path'].split('.')[-1].lower()
+                icon = icon_map.get(ext, icon_map['default'])
                 content += f"""
-                    <li>
-                        <b>Тип файла:</b> {file['file_type']}<br>
-                        <b>Описание:</b> {file['file_description']}<br>
-                        <i><a href="{file['file_path']}">{file['file_path']}</a></i>
+                    <li style='margin-bottom: 12px; padding: 8px; background: #f0f0f0; border: 1px solid #bbb; border-radius: 4px;'>
+                        <span style='font-size: 18px; margin-right: 8px;'>{icon}</span>
+                        <b>{file['file_type']}</b><br>
+                        <span style='color: #555;'>{file['file_description']}</span><br>
+                        <a href=\"{file['file_path']}\" style='color: #003399; font-weight: bold; word-break: break-all;'>{file['file_path']}</a>
                     </li>
                 """
             content += "</ul></div>"
@@ -251,7 +281,6 @@ class UtilsForViews:
 
         return content
 
-    
     def set_coordinate_to_point_list(self, row, lat, lon):
 
         item_lat = QTableWidgetItem(f"{lat:.6f}")
@@ -297,7 +326,3 @@ class UtilsForViews:
 
         # Перемещаем выделение
         self.view.pointsList.selectRow(target_row)
-
-
-    
-

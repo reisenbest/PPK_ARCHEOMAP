@@ -26,6 +26,12 @@ var localTilesLayer = createLocalTileLayer(mapBounds);
 var imageBounds = mapBounds; // если план полностью совпадает с границами карты
 var historicalPlan = createHistoricalPlanOverlay(mapBounds);
 
+// === Floor plan overlay ===
+var floorPlan = createFloorPlanOverlay();
+
+// === Minih plan overlay ===
+var minihPlan = createMinihPlanOverlay();
+
 // По умолчанию включаем оба слоя
 osmLayer.addTo(map);
 localTilesLayer.addTo(map);
@@ -33,7 +39,9 @@ localTilesLayer.addTo(map);
 var overlays = {
   "OpenStreetMap": osmLayer,
   "Локальные тайлы": localTilesLayer,
-  "Шуберт 1828": historicalPlan
+  "Шуберт 1828": historicalPlan,
+  "План 2 этаж": floorPlan,
+  "План Миних 1730": minihPlan
 };
 
 L.control.layers(null, overlays, {collapsed: false}).addTo(map);
