@@ -1,7 +1,15 @@
 import sys
+import os
 from PyQt5.QtWidgets import QApplication
 from views.main_menu_window.main_menu import MainMenuController
 from database.db_main_connection import UnionDataBaseManagerController
+
+def resource_path(relative_path):
+    if hasattr(sys, '_MEIPASS'):  # type: ignore
+        # Запущено из exe, ресурсы во временной папке
+        return os.path.join(sys._MEIPASS, relative_path)
+    # Запущено из исходников
+    return os.path.join(os.path.abspath("."), relative_path)
 
 
 def main():
